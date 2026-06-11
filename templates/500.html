@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-icon"></div>
+
+    <h1>500</h1>
+    <h2>Internal Server Error</h2>
+
+    <p>
+        Something went wrong while processing your request.
+        Please try again later or return to the dashboard.
+    </p>
+
+    <div class="error-actions">
+        <a href="/dashboard" class="action-btn">Back to Dashboard</a>
+        <a href="/chat" class="secondary-btn">Open AI Assistant</a>
+    </div>
+</div>
+{% endblock %}

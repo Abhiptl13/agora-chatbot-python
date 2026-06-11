@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-icon"></div>
+
+    <h1>404</h1>
+    <h2>Page Not Found</h2>
+
+    <p>
+        The page you are trying to open does not exist or may have been moved.
+        Please return to the dashboard or use the navigation menu to continue.
+    </p>
+
+    <div class="error-actions">
+        <a href="/dashboard" class="action-btn">Back to Dashboard</a>
+        <a href="/chat" class="secondary-btn">Open AI Assistant</a>
+    </div>
+</div>
+{% endblock %}
