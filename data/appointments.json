@@ -1,0 +1,14 @@
+[
+    {
+        "user": "etudiant@college.local",
+        "role": "student",
+        "name": "Abhi Patel",
+        "appointment_type": "Academic Support",
+        "advisor": "Dr. Sarah Johnson",
+        "date": "2026-06-11",
+        "time": "12:00",
+        "notes": "no need to schedule",
+        "status": "Pending",
+        "created_at": "2026-06-10 22:54:11"
+    }
+]

@@ -1,0 +1,29 @@
+[
+    {
+        "user": "etudiant@college.local",
+        "name": "Student User",
+        "role": "student",
+        "question": "hi",
+        "answer": "Sorry, I could not find this information in the local knowledge base. Please contact administration for more help.",
+        "source": "Local fallback response",
+        "timestamp": "2026-06-10 22:48:17"
+    },
+    {
+        "user": "etudiant@college.local",
+        "name": "Student User",
+        "role": "student",
+        "question": "Where can I see my class schedule?",
+        "answer": "Students can view their class schedule from the Agora intranet dashboard under the Schedule section.",
+        "source": "Class Schedule",
+        "timestamp": "2026-06-10 22:51:56"
+    },
+    {
+        "user": "etudiant@college.local",
+        "name": "Student User",
+        "role": "student",
+        "question": "How do I book an appointment?",
+        "answer": "Users can book an appointment by opening the Appointment Booking page and completing the request form.",
+        "source": "Appointment Booking",
+        "timestamp": "2026-06-10 22:52:14"
+    }
+]

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "doc001",
+    "title": "Exam Retake Form",
+    "category": "Academic",
+    "summary": "Official form for students requesting an exam retake.",
+    "type": "Form",
+    "audience": ["student"]
+  },
+  {
+    "id": "doc002",
+    "title": "Class Schedule Guide",
+    "category": "Student Services",
+    "summary": "Guide explaining how students can access and understand their class schedule.",
+    "type": "Guide",
+    "audience": ["student"]
+  },
+  {
+    "id": "doc003",
+    "title": "Teaching Resource Guide",
+    "category": "Teacher Resources",
+    "summary": "Guide for teachers to access course materials and academic resources.",
+    "type": "Guide",
+    "audience": ["teacher"]
+  },
+  {
+    "id": "doc004",
+    "title": "Administrative Procedure Manual",
+    "category": "Administration",
+    "summary": "Internal manual for administrative procedures and policies.",
+    "type": "Manual",
+    "audience": ["admin"]
+  }
+]

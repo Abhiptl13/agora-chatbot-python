@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Agora Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="topbar">
+        <div>
+            <strong>Agora Assistant</strong>
+            <span>Academic support made simple</span>
+        </div>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="nav">
+        <a href="/dashboard">AI Assistant</a>
+        <a href="/documents">Document Library</a>
+        <a href="/appointments">Book Appointment</a>
+        <a href="/history">History</a>
+    </div>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

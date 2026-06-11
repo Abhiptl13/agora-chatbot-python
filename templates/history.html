@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="page-title">Conversation History</h2>
+<p class="muted">Review your previous chatbot questions and answers.</p>
+
+{% for item in history %}
+<div class="history-card">
+    <p><strong>Question:</strong> {{ item.question }}</p>
+    <p><strong>Answer:</strong> {{ item.answer }}</p>
+    <p><strong>Source:</strong> {{ item.source }}</p>
+    <p><strong>Role:</strong> {{ item.role }}</p>
+    <small>{{ item.timestamp }}</small>
+</div>
+{% else %}
+<div class="empty-state">
+    No conversation history yet.
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Schedule an Appointment</h2>
+<p class="muted">Book a meeting with an academic advisor or administrator.</p>
+
+{% if success %}
+<p class="success">{{ success }}</p>
+{% endif %}
+
+<div class="appointment-layout">
+    <form method="POST" class="appointment-form">
+        <h3>Personal Information</h3>
+
+        <label>Full Name</label>
+        <input type="text" name="name" required>
+
+        <label>Appointment Type</label>
+        <select name="appointment_type" required>
+            <option value="">Select type</option>
+            <option>Academic Support</option>
+            <option>Administrative Help</option>
+            <option>Document Question</option>
+        </select>
+
+        <label>Select Advisor</label>
+        <select name="advisor" required>
+            <option value="">Select advisor</option>
+            <option>Dr. Sarah Johnson</option>
+            <option>Prof. Michael Chen</option>
+            <option>Ms. Emily Rodriguez</option>
+        </select>
+
+        <label>Preferred Date</label>
+        <input type="date" name="date" required>
+
+        <label>Time Slot</label>
+        <input type="time" name="time" required>
+
+        <label>Additional Notes</label>
+        <textarea name="notes" placeholder="Please provide details..."></textarea>
+
+        <button type="submit">Submit Request</button>
+    </form>
+
+    <div class="advisor-box">
+        <h3>Available Advisors</h3>
+        <p>Dr. Sarah Johnson — Academic Advisor</p>
+        <p>Prof. Michael Chen — Career Counselor</p>
+        <p>Ms. Emily Rodriguez — Financial Aid Officer</p>
+
+        <div class="help-box">
+            <h3>Need Help?</h3>
+            <p>For urgent help, contact administration directly.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

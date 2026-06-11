@@ -1,0 +1,26 @@
+[
+  {
+    "id": "u001",
+    "name": "Student User",
+    "email": "etudiant@college.local",
+    "password": "Agora2026!",
+    "role": "student",
+    "department": "Student Services"
+  },
+  {
+    "id": "u002",
+    "name": "Teacher User",
+    "email": "enseignant@college.local",
+    "password": "Agora2026!",
+    "role": "teacher",
+    "department": "Academic Staff"
+  },
+  {
+    "id": "u003",
+    "name": "Admin User",
+    "email": "admin@college.local",
+    "password": "Agora2026!",
+    "role": "admin",
+    "department": "Administration"
+  }
+]

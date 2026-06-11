@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agora Assistant - Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-body">
+
+<div class="login-card">
+
+    <div class="icon">🎓</div>
+
+    <h1>Agora Assistant</h1>
+
+    <p class="login-subtitle">
+        Intelligent Academic Support Platform
+    </p>
+
+    <form method="POST">
+
+        <label>Email Address</label>
+        <input
+            type="email"
+            name="email"
+            placeholder="Enter your email address"
+            required
+        >
+
+        <label>Password</label>
+        <input
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            required
+        >
+
+        <button type="submit">
+            Sign In
+        </button>
+
+    </form>
+
+    {% if error %}
+        <div class="error">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    <div class="demo">
+
+        <h3>Demo Accounts</h3>
+
+        <div class="account-box">
+            <strong>Student</strong><br>
+            etudiant@college.local
+        </div>
+
+        <div class="account-box">
+            <strong>Teacher</strong><br>
+            enseignant@college.local
+        </div>
+
+        <div class="account-box">
+            <strong>Administrator</strong><br>
+            admin@college.local
+        </div>
+
+        <p class="password-note">
+            Password: <strong>Agora2026!</strong>
+        </p>
+
+    </div>
+
+    <div class="footer-note">
+        Collège Agora Intranet Assistant
+    </div>
+
+</div>
+
+</body>
+</html>

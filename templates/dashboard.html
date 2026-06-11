@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="page-title">Welcome, {{ user.name }}</h2>
+<p class="muted">Role: {{ user.role }} | Department: {{ user.department }}</p>
+
+<div class="cards">
+    <a class="card" href="/chat">
+        <h3>AI Assistant</h3>
+        <p>Ask academic questions and receive instant answers from the knowledge base.</p>
+    </a>
+
+    <a class="card" href="/documents">
+        <h3>Document Library</h3>
+        <p>Search forms, guides, academic documents, and role-based resources.</p>
+    </a>
+
+    <a class="card" href="/appointments">
+        <h3>Book Appointment</h3>
+        <p>Schedule a meeting with an advisor or administrative staff member.</p>
+    </a>
+
+    <a class="card" href="/history">
+        <h3>Chat History</h3>
+        <p>Review previous questions, answers, sources, and timestamps.</p>
+    </a>
+</div>
+{% endblock %}

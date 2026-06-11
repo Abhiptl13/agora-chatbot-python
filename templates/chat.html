@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="chat-container">
+    <h2>AI Assistant</h2>
+
+    <div id="chatBox" class="chat-box">
+        <div class="bot-message">
+            Hello! I’m Agora Assistant. How can I help you today?
+        </div>
+    </div>
+
+    <div class="chat-input">
+        <input id="question" type="text" placeholder="Ask about schedule, exams, documents, or administration help...">
+        <button onclick="sendMessage()">➤</button>
+    </div>
+
+    <p id="loading" class="muted"></p>
+</div>
+
+<script>
+function sendMessage() {
+    const input = document.getElementById("question");
+    const question = input.value;
+    const chatBox = document.getElementById("chatBox");
+    const loading = document.getElementById("loading");
+
+    if (question.trim() === "") {
+        return;
+    }
+
+    chatBox.innerHTML += `<div class="user-message">${question}</div>`;
+    input.value = "";
+    loading.innerText = "Agora Assistant is typing...";
+
+    fetch("/api/chat/message", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({question: question})
+    })
+    .then(response => response.json())
+    .then(data => {
+        loading.innerText = "";
+        chatBox.innerHTML += `
+            <div class="bot-message">
+                ${data.answer}
+                <br><small><strong>Source:</strong> ${data.source}</small>
+            </div>
+        `;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    })
+    .catch(() => {
+        loading.innerText = "";
+        chatBox.innerHTML += `<div class="bot-message error">Error: Could not process your message.</div>`;
+    });
+}
+</script>
+{% endblock %}

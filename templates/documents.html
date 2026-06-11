@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="page-title">Document Library</h2>
+<p class="muted">Search documents available for your role: {{ user.role }}</p>
+
+<form method="GET" class="search-form">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search by title, category, or keyword">
+    <button type="submit">Search</button>
+</form>
+
+<div class="document-grid">
+    {% for doc in documents %}
+    <div class="doc-card">
+        <h3>{{ doc.title }}</h3>
+        <p><strong>Category:</strong> {{ doc.category }}</p>
+        <p><strong>Type:</strong> {{ doc.type }}</p>
+        <p>{{ doc.summary }}</p>
+        <button>View Document</button>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        No documents found for your search or role.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
