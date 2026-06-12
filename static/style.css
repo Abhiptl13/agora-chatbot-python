@@ -454,3 +454,81 @@ main {
         max-width: 420px;
     }
 }
+
+/* ERROR PAGES */
+
+.error-page {
+    background: white;
+    max-width: 620px;
+    margin: 70px auto;
+    padding: 45px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.10);
+    border: 1px solid #eee;
+}
+
+.error-icon {
+    font-size: 55px;
+    margin-bottom: 10px;
+}
+
+.error-page h1 {
+    font-size: 70px;
+    margin: 0;
+    color: #5b6ee1;
+}
+
+.error-page h2 {
+    margin-top: 5px;
+    color: #222;
+}
+
+.error-page p {
+    color: #666;
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 18px auto;
+}
+
+.error-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.action-btn,
+.secondary-btn {
+    display: inline-block;
+    padding: 13px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.action-btn {
+    background: linear-gradient(135deg, #5b6ee1, #8c35c9);
+    color: white;
+}
+
+.secondary-btn {
+    background: #f4f5ff;
+    color: #5b6ee1;
+    border: 1px solid #dfe2ff;
+}
+
+.action-btn:hover,
+.secondary-btn:hover {
+    transform: translateY(-2px);
+    transition: 0.2s ease;
+}
+
+.bot-message {
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+.user-message {
+    white-space: pre-line;
+}
