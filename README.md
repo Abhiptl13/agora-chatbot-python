@@ -339,112 +339,6 @@ Responsibilities:
 
 ---
 
-# Dependencies
-
-## Introduction
-
-The Agora Assistant Chatbot relies on several third-party Python libraries to support web application development, database communication, artificial intelligence integration, environment variable management, and API processing.
-
-These dependencies are maintained through the `requirements.txt` file, ensuring that every developer, evaluator, or reviewer can install the exact versions required to run the application successfully.
-
-Using a centralized dependency management approach improves reproducibility, simplifies project setup, and reduces compatibility issues across different environments.
-
----
-
-## Installing Dependencies
-
-After creating and activating the virtual environment, install all required packages using:
-
-```bash
-pip install -r requirements.txt
-```
-
-This command automatically installs every library required by the application.
-
----
-
-## Core Dependencies
-
-### Flask
-
-Purpose:
-
-Provides the primary backend framework used to build the web application.
-
-Responsibilities:
-
-- Routing
-- Session Management
-- Authentication
-- Template Rendering
-- API Endpoint Handling
-- Request Processing
-
----
-
-### PyMongo
-
-Purpose:
-
-Provides communication between the Flask application and MongoDB Atlas.
-
-Responsibilities:
-
-- Database Connectivity
-- Collection Access
-- Data Retrieval
-- Data Storage
-- Query Execution
-
----
-
-### Python-Dotenv
-
-Purpose:
-
-Loads environment variables from the `.env` file.
-
-Responsibilities:
-
-- Configuration Management
-- Credential Loading
-- Environment Separation
-- Secure Secret Storage
-
----
-
-### Groq
-
-Purpose:
-
-Provides access to Groq AI services and large language models.
-
-Responsibilities:
-
-- AI Response Generation
-- Prompt Processing
-- Context Enhancement
-- Natural Language Generation
-
----
-
-## Dependency Verification
-
-After installation, verify that all packages have been installed correctly:
-
-```bash
-pip list
-```
-
-The installed package list should include the required project dependencies.
-
----
-
-## Summary
-
-The Agora Assistant Chatbot utilizes a carefully selected set of Python libraries to support web development, cloud database integration, artificial intelligence capabilities, and secure configuration management. These dependencies form the technical foundation of the platform and enable the successful execution of all implemented features.
-
-
 
 # Installation Guide
 
@@ -490,13 +384,13 @@ The first step is obtaining the project source code.
 Clone the GitHub repository to the local machine:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Abhiptl13/agora-chatbot-python.git
 ```
 
 Navigate to the project directory:
 
 ```bash
-cd agora_chatbot_python
+cd agora-chatbot-python
 ```
 
 This directory contains the complete source code, templates, static resources, service modules, configuration files, and project documentation required to run the application.
@@ -2588,20 +2482,140 @@ Future Security Enhancements:
 
 # Documentation
 
-Comprehensive project documentation is available within the docs directory.
+Comprehensive technical and project documentation is available within the `docs` directory. These documents were created throughout the development lifecycle to support project planning, implementation, testing, validation, maintenance, and final project evaluation.
 
-Available Documentation:
+The documentation provides detailed insight into the system architecture, database design, API functionality, testing procedures, bug resolution activities, sprint outcomes, and future enhancement opportunities.
 
-- Architecture Documentation
-- MongoDB Architecture Documentation
-- Data Structure Documentation
-- API Documentation
-- Test Plan
-- Testing Report
-- Sprint 4 Summary
-- Python Version Mapping
+The objective of maintaining comprehensive documentation is to improve project transparency, support future development efforts, simplify onboarding for new contributors, and provide evidence of completed work during project reviews and demonstrations.
 
 ---
+
+## Available Documentation
+
+### architecture.md
+
+Provides an overview of the system architecture, application layers, component interactions, and overall design decisions used throughout the project.
+
+---
+
+### mongodb_architecture.md
+
+Documents the MongoDB Atlas implementation, database structure, collection design, cloud connectivity, and data management strategy used by the application.
+
+---
+
+### data_structure.md
+
+Describes the structure of application data, collection schemas, user records, knowledge-base entries, document metadata, appointment records, and conversation history.
+
+---
+
+### api_examples.md
+
+Provides examples of REST API requests and responses, endpoint descriptions, expected outputs, and integration details for frontend-backend communication.
+
+---
+
+### test_plan.md
+
+Documents the testing strategy, testing objectives, testing scope, validation procedures, test cases, and expected outcomes used throughout the project.
+
+---
+
+### testing_report.md
+
+Contains the final testing results, executed test cases, validation outcomes, module verification results, and testing conclusions.
+
+---
+
+### sprint4_summary.md
+
+Summarizes the work completed during Sprint 4, including MongoDB Atlas integration, Groq AI integration, enhanced chatbot functionality, and documentation improvements.
+
+---
+
+### sprint5_test_results.md
+
+Documents Sprint 5 testing activities, executed validation procedures, system verification results, and overall application stability assessment.
+
+---
+
+### sprint5_bug_list.md
+
+Provides a complete record of identified bugs, root-cause analysis, corrective actions, validation results, and resolved issues discovered during Sprint 5.
+
+---
+
+### python_version_mapping.md
+
+Explains how the Python implementation maps to the requirements, objectives, and functionality of the primary Assistant Chatbot project.
+
+---
+
+### deployment_notes.md
+
+Provides deployment considerations, local execution requirements, infrastructure overview, configuration requirements, and future deployment recommendations.
+
+---
+
+### limitations_future_improvements.md
+
+Documents known limitations, technical constraints, potential enhancements, and future development opportunities identified during project completion.
+
+---
+
+### python_demo_notes.md
+
+Provides guidance for demonstrations and presentations, including feature walkthroughs, testing examples, and recommended demonstration scenarios.
+
+---
+
+## Documentation Benefits
+
+The project documentation provides several important benefits:
+
+- Improved maintainability
+- Better project transparency
+- Simplified future development
+- Structured project validation
+- Easier onboarding for new contributors
+- Professional project presentation
+- Comprehensive testing evidence
+- Technical knowledge preservation
+
+---
+
+## Documentation Status
+
+Documentation Coverage:
+
+✓ System Architecture
+
+✓ Database Architecture
+
+✓ API Documentation
+
+✓ Data Structure Documentation
+
+✓ Testing Documentation
+
+✓ Bug Resolution Documentation
+
+✓ Sprint Documentation
+
+✓ Project Mapping Documentation
+
+✓ Deployment Documentation
+
+✓ Future Enhancement Documentation
+
+All major project components have been documented and reviewed as part of the final project validation process.
+
+---
+
+## Conclusion
+
+The Agora Assistant Chatbot includes comprehensive technical and project documentation covering architecture, implementation, testing, validation, and future development considerations. This documentation serves as an important project asset that supports maintenance, evaluation, demonstration, and continued development beyond the initial implementation phase.
 
 # Testing Coverage
 
@@ -2644,6 +2658,127 @@ Major accomplishments completed during Sprint 4 include:
 - Professional technical documentation
 
 ---
+# Sprint 5 Stabilization and Testing
+
+## Introduction
+
+Sprint 5 represented the final development phase of the Agora Assistant Chatbot project and focused on testing, stabilization, security verification, bug resolution, documentation completion, and project validation.
+
+The primary objective of this sprint was to ensure that all implemented features functioned correctly, all critical issues were resolved, and the application was ready for demonstration, evaluation, and final review.
+
+---
+
+## Sprint Goals
+
+The goals of Sprint 5 included:
+
+- Complete system testing
+- Verify MongoDB Atlas integration
+- Verify Groq AI integration
+- Validate API endpoints
+- Review security implementation
+- Resolve application bugs
+- Improve application stability
+- Finalize technical documentation
+- Verify project structure consistency
+- Prepare project demonstration materials
+
+---
+
+## Testing Activities
+
+Testing was performed across all major application modules.
+
+Validated Components:
+
+- Authentication System
+- Role-Based Access Control
+- Dashboard Navigation
+- Chatbot Functionality
+- Document Library
+- Appointment Management
+- Conversation History
+- MongoDB Connectivity
+- Groq AI Integration
+- REST API Endpoints
+
+---
+
+## Bug Resolution Activities
+
+Several issues were identified and resolved during Sprint 5.
+
+Examples include:
+
+- Enter key submission issue in chatbot
+- MongoDB Atlas access configuration issue
+- Chat response formatting issue
+- Knowledge-base matching improvements
+- Appointment validation enhancements
+
+All identified critical and high-priority issues were successfully resolved.
+
+---
+
+## Security Verification
+
+The following security controls were reviewed:
+
+- Session Authentication
+- Protected Routes
+- Role-Based Access Control
+- Environment Variable Protection
+- MongoDB Access Configuration
+- GitHub Credential Protection
+
+No critical security issues remained open after review.
+
+---
+
+## Documentation Activities
+
+Project documentation was reviewed and updated.
+
+Completed Documentation:
+
+- README
+- Architecture Documentation
+- MongoDB Architecture
+- Data Structure Documentation
+- API Examples
+- Test Plan
+- Testing Report
+- Bug Resolution Report
+- Sprint Summary
+- Future Improvements Documentation
+
+---
+
+## Sprint Outcome
+
+The application successfully met all Sprint 5 objectives.
+
+Results:
+
+✓ Stable Application
+
+✓ Completed Testing
+
+✓ Resolved Critical Issues
+
+✓ Updated Documentation
+
+✓ Security Verification Completed
+
+✓ Final Project Validation Completed
+
+---
+
+## Conclusion
+
+Sprint 5 successfully transformed the Agora Assistant Chatbot into a stable, tested, and review-ready application. Through comprehensive testing, issue resolution, security verification, and documentation completion, the project reached a level suitable for final presentation, demonstration, and evaluation.
+ 
+
 
 # Future Roadmap
 
