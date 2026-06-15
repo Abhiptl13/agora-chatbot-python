@@ -284,9 +284,220 @@ for item in users_extra:
 for item in appointments_sample:
     db.appointments.insert_one(item)
 
+
+# -----------------------------
+# PORTAL WEBSITE CONTENT
+# -----------------------------
+
+website_content = [
+    {
+        "id": "web001",
+        "title": "AI Campus Portal Overview",
+        "section": "Home",
+        "keywords": [
+            "portal",
+            "campus portal",
+            "home page",
+            "ai portal",
+            "college agora",
+            "website"
+        ],
+        "content": "The AI Campus Portal is a centralized website where students, teachers, and administrators can access services, documents, appointments, academic resources, and AI chatbot support.",
+        "source": "Portal Website - Home"
+    },
+    {
+        "id": "web002",
+        "title": "Student Services",
+        "section": "Services",
+        "keywords": [
+            "student services",
+            "academic advising",
+            "registration",
+            "student records",
+            "appointments",
+            "institutional assistance"
+        ],
+        "content": "Student Services helps students with academic advising, student records, course registration support, appointments, and general institutional assistance.",
+        "source": "Portal Website - Student Services"
+    },
+    {
+        "id": "web003",
+        "title": "Course Resources",
+        "section": "Documents",
+        "keywords": [
+            "course resources",
+            "course outlines",
+            "academic documents",
+            "guides",
+            "forms",
+            "learning resources"
+        ],
+        "content": "Course Resources provides access to course outlines, academic documents, institutional guides, student forms, and learning resources.",
+        "source": "Portal Website - Course Resources"
+    },
+    {
+        "id": "web004",
+        "title": "Embedded Chatbot",
+        "section": "AI Assistant",
+        "keywords": [
+            "chatbot",
+            "ai assistant",
+            "embedded chatbot",
+            "ask question",
+            "website chatbot",
+            "assistant"
+        ],
+        "content": "The embedded AI chatbot is available throughout the website and allows users to ask questions without leaving the current page.",
+        "source": "Portal Website - Embedded Chatbot"
+    },
+    {
+        "id": "web005",
+        "title": "Appointment Services",
+        "section": "Appointments",
+        "keywords": [
+            "appointment",
+            "book appointment",
+            "advisor",
+            "academic advising",
+            "registrar office",
+            "student affairs",
+            "it services"
+        ],
+        "content": "Users can request appointments for academic advising, registrar office support, IT services, and student affairs through the portal.",
+        "source": "Portal Website - Appointment Services"
+    },
+    {
+        "id": "web006",
+        "title": "Document Center",
+        "section": "Document Center",
+        "keywords": [
+            "document center",
+            "documents",
+            "forms",
+            "student forms",
+            "advisor guide",
+            "registration guide",
+            "course documents"
+        ],
+        "content": "The Document Center allows users to search student forms, course registration guides, advisor booking guides, academic documents, and institutional resources.",
+        "source": "Portal Website - Document Center"
+    }
+]
+
+portal_services = [
+    {
+        "id": "svc001",
+        "title": "Book an Appointment",
+        "keywords": [
+            "book appointment",
+            "appointment",
+            "advisor appointment",
+            "academic advising",
+            "registrar"
+        ],
+        "description": "Users can book appointments with Academic Advising, Student Affairs, Registrar Office, or IT Services.",
+        "source": "Portal Service - Book an Appointment"
+    },
+    {
+        "id": "svc002",
+        "title": "Search Documents",
+        "keywords": [
+            "search documents",
+            "documents",
+            "course outline",
+            "forms",
+            "guides"
+        ],
+        "description": "Users can search course outlines, student forms, institutional guides, and academic resources.",
+        "source": "Portal Service - Search Documents"
+    },
+    {
+        "id": "svc003",
+        "title": "Ask a Question",
+        "keywords": [
+            "ask question",
+            "question",
+            "help",
+            "chatbot",
+            "ai assistant"
+        ],
+        "description": "Users can ask natural language questions and receive AI-powered answers with relevant sources.",
+        "source": "Portal Service - Ask a Question"
+    }
+]
+
+portal_departments = [
+    {
+        "id": "dep001",
+        "title": "Computer Science",
+        "keywords": ["computer science", "programming", "software", "data", "ai", "web development"],
+        "description": "The Computer Science department includes programming, software development, databases, web applications, data analysis, and artificial intelligence topics.",
+        "source": "Portal Department - Computer Science"
+    },
+    {
+        "id": "dep002",
+        "title": "Business Administration",
+        "keywords": ["business", "administration", "management", "operations", "finance"],
+        "description": "The Business Administration department supports learning in management, operations, finance, business communication, and organizational processes.",
+        "source": "Portal Department - Business Administration"
+    },
+    {
+        "id": "dep003",
+        "title": "Design and Digital Arts",
+        "keywords": ["design", "digital arts", "creative", "ux", "ui", "media"],
+        "description": "The Design and Digital Arts department focuses on creative design, digital media, user experience, visual communication, and interactive content.",
+        "source": "Portal Department - Design and Digital Arts"
+    },
+    {
+        "id": "dep004",
+        "title": "Marketing and Commerce",
+        "keywords": ["marketing", "commerce", "sales", "branding", "customer"],
+        "description": "The Marketing and Commerce department covers marketing strategy, sales, branding, customer communication, and business promotion.",
+        "source": "Portal Department - Marketing and Commerce"
+    },
+    {
+        "id": "dep005",
+        "title": "Social Sciences",
+        "keywords": ["social sciences", "society", "psychology", "research", "culture"],
+        "description": "The Social Sciences department explores society, culture, human behavior, research methods, and communication.",
+        "source": "Portal Department - Social Sciences"
+    },
+    {
+        "id": "dep006",
+        "title": "General Education",
+        "keywords": ["general education", "english", "french", "humanities", "physical education"],
+        "description": "General Education includes language courses, humanities, physical education, communication, and essential academic skills.",
+        "source": "Portal Department - General Education"
+    }
+]
+
+for item in website_content:
+    db.website_content.update_one(
+        {"id": item["id"]},
+        {"$set": item},
+        upsert=True
+    )
+
+for item in portal_services:
+    db.portal_services.update_one(
+        {"id": item["id"]},
+        {"$set": item},
+        upsert=True
+    )
+
+for item in portal_departments:
+    db.portal_departments.update_one(
+        {"id": item["id"]},
+        {"$set": item},
+        upsert=True
+    )
+
 print("Sprint 4 richer data inserted successfully.")
 print("Added/updated:")
 print("- 10 knowledge base records")
 print("- 10 document records")
 print("- 2 extra users")
 print("- 2 sample appointments")
+print("- 6 website content records")
+print("- 3 portal service records")
+print("- 6 portal department records")

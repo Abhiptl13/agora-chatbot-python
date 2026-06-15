@@ -3,81 +3,383 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agora Assistant - Login</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>College Agora Portal - Login</title>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --secondary: #0ea5e9;
+            --bg: #f8fafc;
+            --text: #172033;
+            --muted: #64748b;
+            --border: #dbe3ef;
+            --danger-bg: #fee2e2;
+            --danger-text: #991b1b;
+            --success-bg: #dcfce7;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(79,70,229,0.22), transparent 34%),
+                radial-gradient(circle at bottom right, rgba(14,165,233,0.18), transparent 36%),
+                linear-gradient(135deg, #eef2ff, #f8fafc 55%, #ecfeff);
+            color: var(--text);
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+        }
+
+        .login-hero {
+            padding: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 50px;
+        }
+
+        .brand-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 16px 35px rgba(79,70,229,0.28);
+        }
+
+        .brand strong {
+            display: block;
+            font-size: 21px;
+        }
+
+        .brand span {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .login-hero small {
+            color: var(--primary);
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+        }
+
+        .login-hero h1 {
+            font-size: 62px;
+            line-height: 1.05;
+            margin: 16px 0 24px;
+            max-width: 760px;
+        }
+
+        .login-hero p {
+            color: #475569;
+            font-size: 19px;
+            line-height: 1.7;
+            max-width: 690px;
+        }
+
+        .feature-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 34px;
+            max-width: 720px;
+        }
+
+        .feature-card {
+            background: rgba(255,255,255,0.76);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+        }
+
+        .feature-card strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .feature-card span {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .login-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 50px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 470px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 34px;
+            box-shadow: 0 30px 90px rgba(15,23,42,0.14);
+        }
+
+        .login-card h2 {
+            margin: 0 0 10px;
+            font-size: 30px;
+        }
+
+        .login-subtitle {
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        label {
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        input {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 15px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+        }
+
+        button {
+            margin-top: 8px;
+            border: none;
+            border-radius: 14px;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .error {
+            margin-top: 18px;
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border: 1px solid #fecaca;
+            border-radius: 14px;
+            padding: 14px;
+            font-weight: 800;
+        }
+
+        .demo {
+            margin-top: 28px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .demo h3 {
+            margin: 0 0 14px;
+        }
+
+        .account-box {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 13px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .account-box strong {
+            color: var(--primary);
+        }
+
+        .password-note {
+            margin-bottom: 0;
+            color: var(--muted);
+        }
+
+        .footer-note {
+            margin-top: 22px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 1050px) {
+            body {
+                grid-template-columns: 1fr;
+            }
+
+            .login-hero {
+                padding: 40px 24px;
+            }
+
+            .login-hero h1 {
+                font-size: 44px;
+            }
+
+            .feature-row {
+                grid-template-columns: 1fr;
+            }
+
+            .login-panel {
+                padding: 24px;
+            }
+        }
+    </style>
 </head>
-<body class="login-body">
 
-<div class="login-card">
+<body>
 
-    <div class="icon">🎓</div>
+    <section class="login-hero">
 
-    <h1>Agora Assistant</h1>
-
-    <p class="login-subtitle">
-        Intelligent Academic Support Platform
-    </p>
-
-    <form method="POST">
-
-        <label>Email Address</label>
-        <input
-            type="email"
-            name="email"
-            placeholder="Enter your email address"
-            required
-        >
-
-        <label>Password</label>
-        <input
-            type="password"
-            name="password"
-            placeholder="Enter your password"
-            required
-        >
-
-        <button type="submit">
-            Sign In
-        </button>
-
-    </form>
-
-    {% if error %}
-        <div class="error">
-            {{ error }}
-        </div>
-    {% endif %}
-
-    <div class="demo">
-
-        <h3>Demo Accounts</h3>
-
-        <div class="account-box">
-            <strong>Student</strong><br>
-            etudiant@college.local
+        <div class="brand">
+            <div class="brand-icon">🎓</div>
+            <div>
+                <strong>College Lasalle</strong>
+                <span>AI Campus Portal</span>
+            </div>
         </div>
 
-        <div class="account-box">
-            <strong>Teacher</strong><br>
-            enseignant@college.local
-        </div>
+        <small>Secure Academic Access</small>
 
-        <div class="account-box">
-            <strong>Administrator</strong><br>
-            admin@college.local
-        </div>
+        <h1>Sign in to access your intelligent campus portal.</h1>
 
-        <p class="password-note">
-            Password: <strong>Agora2026!</strong>
+        <p>
+            Agora Assistant provides role-based access to documents, appointments,
+            chatbot support, academic services, department information, and
+            institutional resources through a modern AI-powered portal.
         </p>
 
-    </div>
+        <div class="feature-row">
 
-    <div class="footer-note">
-        Collège Agora Intranet Assistant
-    </div>
+            <div class="feature-card">
+                <strong>Role-Based Experience</strong>
+                <span>Students, teachers, and administrators access resources based on their role.</span>
+            </div>
 
-</div>
+            <div class="feature-card">
+                <strong>Embedded AI Assistant</strong>
+                <span>Ask questions and receive context-aware answers from institutional data.</span>
+            </div>
+
+            <div class="feature-card">
+                <strong>MongoDB Integration</strong>
+                <span>Users, documents, appointments, knowledge base, and history are stored in MongoDB.</span>
+            </div>
+
+            <div class="feature-card">
+                <strong>Document & Appointment Tools</strong>
+                <span>Search resources and submit support requests from one portal.</span>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="login-panel">
+
+        <div class="login-card">
+
+            <h2>Login</h2>
+
+            <p class="login-subtitle">
+                Enter your credentials to continue to the College Lasalle portal.
+            </p>
+
+            <form method="POST">
+
+                <label>Email Address</label>
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email address"
+                    required
+                >
+
+                <label>Password</label>
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                >
+
+                <button type="submit">
+                    Sign In
+                </button>
+
+            </form>
+
+            {% if error %}
+                <div class="error">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <div class="demo">
+
+                <h3>Demo Accounts</h3>
+
+                <div class="account-box">
+                    <strong>Student</strong><br>
+                    etudiant@college.local
+                </div>
+
+                <div class="account-box">
+                    <strong>Teacher</strong><br>
+                    enseignant@college.local
+                </div>
+
+                <div class="account-box">
+                    <strong>Administrator</strong><br>
+                    admin@college.local
+                </div>
+
+                <p class="password-note">
+                    Password: <strong>Agora2026!</strong>
+                </p>
+
+            </div>
+
+            <div class="footer-note">
+                College Lasalle Intelligent Academic Support Platform
+            </div>
+
+        </div>
+
+    </section>
 
 </body>
 </html>

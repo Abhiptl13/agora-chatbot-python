@@ -2,26 +2,248 @@
 <html>
 <head>
     <title>Agora Assistant</title>
+
     <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --secondary: #0ea5e9;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #172033;
+            --muted: #64748b;
+            --border: #dbe3ef;
+            --danger-bg: #fee2e2;
+            --danger-text: #b91c1c;
+            --accent: #fef3c7;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+        }
+
+        .portal-navbar {
+            min-height: 82px;
+            background: rgba(255,255,255,0.96);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 56px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .portal-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .portal-brand-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 14px 30px rgba(79, 70, 229, 0.25);
+        }
+
+        .portal-brand-text strong {
+            display: block;
+            font-size: 18px;
+        }
+
+        .portal-brand-text span {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .portal-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            font-weight: 800;
+        }
+
+        .portal-nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            padding: 10px 12px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .portal-nav-links a:hover {
+            background: #eef2ff;
+            color: var(--primary);
+        }
+
+        .portal-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .portal-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--accent);
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+        }
+
+        .portal-user strong {
+            display: block;
+            font-size: 14px;
+        }
+
+        .portal-user span {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: capitalize;
+        }
+
+        .portal-logout {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 13px;
+            border: 1px solid #fecaca;
+        }
+
+        .portal-logout:hover {
+            background: #fecaca;
+        }
+
+        .portal-shell {
+            padding: 36px 56px;
+        }
+
+        .portal-page-header {
+            background:
+                radial-gradient(circle at top right, rgba(14,165,233,0.16), transparent 35%),
+                linear-gradient(135deg, #eef2ff, #ffffff);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 34px;
+            margin-bottom: 28px;
+            box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+        }
+
+        .portal-page-header small {
+            color: var(--primary);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .portal-page-header h1 {
+            margin: 10px 0 8px;
+            font-size: 38px;
+        }
+
+        .portal-page-header p {
+            color: var(--muted);
+            font-size: 17px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1000px) {
+            .portal-navbar {
+                padding: 16px 20px;
+                height: auto;
+                flex-wrap: wrap;
+                gap: 14px;
+            }
+
+            .portal-nav-links {
+                order: 3;
+                width: 100%;
+                overflow-x: auto;
+                gap: 8px;
+            }
+
+            .portal-shell {
+                padding: 24px 18px;
+            }
+
+            .portal-page-header h1 {
+                font-size: 30px;
+            }
+        }
+    </style>
 </head>
+
 <body>
-    <div class="topbar">
-        <div>
-            <strong>Agora Assistant</strong>
-            <span>Academic support made simple</span>
+
+    <nav class="portal-navbar">
+        <a href="/demo-site" class="portal-brand">
+            <div class="portal-brand-icon">🎓</div>
+            <div class="portal-brand-text">
+                <strong>College Lasalle</strong>
+                <span>AI Campus Portal</span>
+            </div>
+        </a>
+
+        <div class="portal-nav-links">
+            <a href="/demo-site">Portal</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/chat">AI Assistant</a>
+            <a href="/documents">Documents</a>
+            <a href="/appointments">Appointments</a>
+            <a href="/history">History</a>
         </div>
-        <a href="/logout">Logout</a>
+
+        <div class="portal-user">
+            <div class="portal-avatar">
+                {{ user.name[0] if user and user.name else "U" }}
+            </div>
+
+            <div>
+                <strong>{{ user.name if user else "Guest User" }}</strong>
+                <span>{{ user.role if user else "visitor" }}</span>
+            </div>
+
+            <a class="portal-logout" href="/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="portal-shell">
+        <main>
+            {% block content %}{% endblock %}
+        </main>
     </div>
 
-    <div class="nav">
-        <a href="/dashboard">AI Assistant</a>
-        <a href="/documents">Document Library</a>
-        <a href="/appointments">Book Appointment</a>
-        <a href="/history">History</a>
-    </div>
-
-    <main>
-        {% block content %}{% endblock %}
-    </main>
 </body>
 </html>

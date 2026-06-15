@@ -1,19 +1,254 @@
 {% extends "base.html" %}
-{% block content %}
-<h2 class="page-title">Conversation History</h2>
-<p class="muted">Review your previous chatbot questions and answers.</p>
 
-{% for item in history %}
-<div class="history-card">
-    <p><strong>Question:</strong> {{ item.question }}</p>
-    <p><strong>Answer:</strong> {{ item.answer }}</p>
-    <p><strong>Source:</strong> {{ item.source }}</p>
-    <p><strong>Role:</strong> {{ item.role }}</p>
-    <small>{{ item.timestamp }}</small>
+{% block content %}
+
+<div class="portal-page-header">
+    <small>AI Conversation History</small>
+    <h1>Interaction History</h1>
+    <p>
+        Review previous conversations with Agora Assistant. This history helps
+        users track questions, answers, sources, and interactions generated
+        through the AI assistant platform.
+    </p>
 </div>
+
+<div class="history-overview">
+
+    <div class="history-stat">
+        <h3>{{ history|length }}</h3>
+        <span>Total Conversations</span>
+    </div>
+
+    <div class="history-stat">
+        <h3>{{ user.role }}</h3>
+        <span>Current Role</span>
+    </div>
+
+    <div class="history-stat">
+        <h3>MongoDB</h3>
+        <span>Storage Backend</span>
+    </div>
+
+</div>
+
+{% if history %}
+
+<div class="history-timeline">
+
+    {% for item in history %}
+
+    <div class="history-card">
+
+        <div class="history-header">
+
+            <div class="history-role">
+                {{ item.role }}
+            </div>
+
+            <div class="history-date">
+                {{ item.timestamp }}
+            </div>
+
+        </div>
+
+        <div class="history-section">
+
+            <h4>Question</h4>
+
+            <div class="question-box">
+                {{ item.question }}
+            </div>
+
+        </div>
+
+        <div class="history-section">
+
+            <h4>AI Response</h4>
+
+            <div class="answer-box">
+                {{ item.answer }}
+            </div>
+
+        </div>
+
+        <div class="history-footer">
+
+            <span class="source-badge">
+                Source: {{ item.source }}
+            </span>
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
 {% else %}
-<div class="empty-state">
-    No conversation history yet.
+
+<div class="empty-state-card">
+
+    <h3>No Conversation History Available</h3>
+
+    <p>
+        You have not interacted with the chatbot yet.
+        Ask a question through Agora Assistant and your
+        conversations will appear here.
+    </p>
+
+    <a href="/chat" class="action-btn">
+        Open AI Assistant
+    </a>
+
 </div>
-{% endfor %}
+
+{% endif %}
+
+<style>
+
+.history-overview{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+    margin-bottom:30px;
+}
+
+.history-stat{
+    background:white;
+    border:1px solid #dbe3ef;
+    border-radius:20px;
+    padding:24px;
+    text-align:center;
+    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+}
+
+.history-stat h3{
+    margin:0;
+    font-size:32px;
+    color:#4f46e5;
+}
+
+.history-stat span{
+    color:#64748b;
+}
+
+.history-timeline{
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+}
+
+.history-card{
+    background:white;
+    border:1px solid #dbe3ef;
+    border-radius:22px;
+    padding:24px;
+    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+}
+
+.history-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+}
+
+.history-role{
+    background:#eef2ff;
+    color:#4338ca;
+    font-weight:800;
+    padding:8px 14px;
+    border-radius:999px;
+    text-transform:capitalize;
+}
+
+.history-date{
+    color:#64748b;
+    font-size:13px;
+}
+
+.history-section{
+    margin-bottom:18px;
+}
+
+.history-section h4{
+    margin-bottom:10px;
+    color:#172033;
+}
+
+.question-box{
+    background:#f8fafc;
+    border:1px solid #dbe3ef;
+    border-radius:14px;
+    padding:14px;
+    line-height:1.6;
+}
+
+.answer-box{
+    background:#eef2ff;
+    border:1px solid #c7d2fe;
+    border-radius:14px;
+    padding:14px;
+    line-height:1.7;
+}
+
+.history-footer{
+    margin-top:10px;
+}
+
+.source-badge{
+    display:inline-block;
+    background:#ecfeff;
+    color:#0f766e;
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:700;
+}
+
+.empty-state-card{
+    background:white;
+    border:1px solid #dbe3ef;
+    border-radius:24px;
+    padding:50px;
+    text-align:center;
+}
+
+.empty-state-card h3{
+    margin-top:0;
+}
+
+.empty-state-card p{
+    color:#64748b;
+    line-height:1.7;
+}
+
+.action-btn{
+    display:inline-block;
+    margin-top:18px;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:white;
+    text-decoration:none;
+    padding:14px 22px;
+    border-radius:14px;
+    font-weight:800;
+}
+
+@media(max-width:900px){
+
+    .history-overview{
+        grid-template-columns:1fr;
+    }
+
+    .history-header{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:10px;
+    }
+
+}
+
+</style>
+
 {% endblock %}

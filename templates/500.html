@@ -1,20 +1,106 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="error-page">
-    <div class="error-icon"></div>
 
-    <h1>500</h1>
-    <h2>Internal Server Error</h2>
+<div class="error-container">
 
-    <p>
-        Something went wrong while processing your request.
-        Please try again later or return to the dashboard.
-    </p>
+    <div class="error-card">
 
-    <div class="error-actions">
-        <a href="/dashboard" class="action-btn">Back to Dashboard</a>
-        <a href="/chat" class="secondary-btn">Open AI Assistant</a>
+        <div class="error-code">
+            500
+        </div>
+
+        <h1>Internal Server Error</h1>
+
+        <p>
+            An unexpected error occurred while processing your request.
+            The system may be temporarily unavailable. Please try again
+            later or return to the portal dashboard.
+        </p>
+
+        <div class="error-actions">
+
+            <a href="/demo-site" class="primary-btn">
+                Return to Portal
+            </a>
+
+            <a href="/chat" class="secondary-btn">
+                Open AI Assistant
+            </a>
+
+        </div>
+
     </div>
+
 </div>
+
+<style>
+
+.error-container{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:65vh;
+}
+
+.error-card{
+    max-width:700px;
+    width:100%;
+    background:white;
+    border:1px solid #dbe3ef;
+    border-radius:28px;
+    padding:50px;
+    text-align:center;
+    box-shadow:0 25px 60px rgba(15,23,42,0.08);
+}
+
+.error-code{
+    font-size:120px;
+    font-weight:900;
+    line-height:1;
+    background:linear-gradient(135deg,#ef4444,#f97316);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    margin-bottom:10px;
+}
+
+.error-card h1{
+    margin-top:0;
+    color:#172033;
+}
+
+.error-card p{
+    color:#64748b;
+    line-height:1.8;
+    margin-bottom:30px;
+}
+
+.error-actions{
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    flex-wrap:wrap;
+}
+
+.primary-btn{
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:white;
+    text-decoration:none;
+    padding:14px 22px;
+    border-radius:14px;
+    font-weight:800;
+}
+
+.secondary-btn{
+    background:white;
+    color:#4f46e5;
+    text-decoration:none;
+    padding:14px 22px;
+    border-radius:14px;
+    border:1px solid #dbe3ef;
+    font-weight:800;
+}
+
+</style>
+
 {% endblock %}

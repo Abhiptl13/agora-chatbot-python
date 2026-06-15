@@ -1,6 +1,7 @@
+import os
 from flask import Flask, render_template, request, redirect, session, jsonify
 from datetime import datetime
-from bson import ObjectId
+from dotenv import load_dotenv
 
 from mongo_db import (
     users_collection,
@@ -12,8 +13,15 @@ from mongo_db import (
 
 from services.chatbot_service import chatbot_response
 
+
+# -----------------------------
+# APP CONFIGURATION
+# -----------------------------
+
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = "agora_secret_key"
+app.secret_key = os.getenv("SECRET_KEY", "fallback_secret_key")
 
 
 # -----------------------------
@@ -37,14 +45,17 @@ def create_timestamp():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def get_request_question():
+    data = request.get_json(silent=True) or {}
+    return (data.get("question") or data.get("message") or "").strip()
+
+
 # -----------------------------
 # MAIN ROUTES
 # -----------------------------
 
 @app.route("/")
 def home():
-    if login_required():
-        return redirect("/dashboard")
     return redirect("/login")
 
 
@@ -74,11 +85,23 @@ def login():
                 "department": user.get("department", "")
             }
 
-            return redirect("/dashboard")
+            # After successful login, open the portal-style demo page
+            return redirect("/demo-site")
 
         error = "Invalid email or password. Please try again."
 
     return render_template("login.html", error=error)
+
+
+@app.route("/demo-site")
+def demo_site():
+    if not login_required():
+        return redirect("/login")
+
+    return render_template(
+        "demo_site.html",
+        user=current_user()
+    )
 
 
 @app.route("/dashboard")
@@ -226,29 +249,67 @@ def logout():
 
 @app.route("/health")
 def health():
-    return {
+    return jsonify({
         "status": "running",
         "project": "Agora Assistant Chatbot - Python Version",
         "database": "MongoDB Atlas",
         "ai_provider": "Groq API"
-    }
+    })
 
 
 # -----------------------------
 # API ROUTES
 # -----------------------------
 
+@app.route("/api/widget/message", methods=["POST"])
+def api_widget_message():
+    question = get_request_question()
+
+    if not question:
+        return jsonify({
+            "error": "Message cannot be empty."
+        }), 400
+
+    # If the user is logged in, use their role.
+    # Otherwise default to student for public widget behavior.
+    user = current_user()
+    role = user["role"] if user else "student"
+
+    answer, source = chatbot_response(question, role)
+
+    if user:
+        conversation_data = {
+            "user": user["email"],
+            "name": user["name"],
+            "role": role,
+            "question": question,
+            "answer": answer,
+            "source": source,
+            "module": "embedded_widget",
+            "timestamp": create_timestamp()
+        }
+
+        conversations_collection.insert_one(conversation_data)
+
+    return jsonify({
+        "question": question,
+        "answer": answer,
+        "source": source,
+        "matched": source != "Fallback",
+        "module": "embedded_widget"
+    })
+
+
 @app.route("/api/chat/message", methods=["POST"])
 def api_chat_message():
     if not login_required():
         return jsonify({"error": "Unauthorized"}), 401
 
-    data = request.get_json()
-    question = data.get("question", "").strip() if data else ""
+    question = get_request_question()
 
     if not question:
         return jsonify({
-            "error": "Question cannot be empty."
+            "error": "Message cannot be empty."
         }), 400
 
     user = current_user()
@@ -263,6 +324,7 @@ def api_chat_message():
         "question": question,
         "answer": answer,
         "source": source,
+        "module": "chat_page",
         "timestamp": create_timestamp()
     }
 
@@ -339,7 +401,7 @@ def api_appointments():
     user = current_user()
 
     if request.method == "POST":
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
 
         required_fields = [
             "name",
@@ -374,6 +436,7 @@ def api_appointments():
         }
 
         appointments_collection.insert_one(appointment_data)
+        appointment_data = serialize_document(appointment_data)
 
         return jsonify({
             "message": "Appointment request submitted successfully.",
@@ -412,4 +475,6 @@ def internal_error(error):
 # -----------------------------
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.getenv("PORT", 5000))
+    debug_mode = os.getenv("FLASK_DEBUG", "0") == "1"
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)

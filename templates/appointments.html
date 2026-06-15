@@ -1,57 +1,321 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Schedule an Appointment</h2>
-<p class="muted">Book a meeting with an academic advisor or administrator.</p>
+
+<div class="portal-page-header">
+    <small>Appointment Services</small>
+    <h1>Schedule an Appointment</h1>
+    <p>
+        Book a meeting with an academic advisor, administrator, student services
+        representative, or support staff member. Appointment requests are stored
+        in MongoDB and can be reviewed later.
+    </p>
+</div>
 
 {% if success %}
-<p class="success">{{ success }}</p>
+<div class="alert success-alert">
+    {{ success }}
+</div>
+{% endif %}
+
+{% if error %}
+<div class="alert error-alert">
+    {{ error }}
+</div>
 {% endif %}
 
 <div class="appointment-layout">
-    <form method="POST" class="appointment-form">
-        <h3>Personal Information</h3>
 
-        <label>Full Name</label>
-        <input type="text" name="name" required>
+    <section class="appointment-card">
 
-        <label>Appointment Type</label>
-        <select name="appointment_type" required>
-            <option value="">Select type</option>
-            <option>Academic Support</option>
-            <option>Administrative Help</option>
-            <option>Document Question</option>
-        </select>
+        <h2>Appointment Request Form</h2>
+        <p class="section-description">
+            Complete the required information below. Your request will be saved
+            with a pending status.
+        </p>
 
-        <label>Select Advisor</label>
-        <select name="advisor" required>
-            <option value="">Select advisor</option>
-            <option>Dr. Sarah Johnson</option>
-            <option>Prof. Michael Chen</option>
-            <option>Ms. Emily Rodriguez</option>
-        </select>
+        <form method="POST" class="appointment-form">
 
-        <label>Preferred Date</label>
-        <input type="date" name="date" required>
+            <div class="form-grid">
 
-        <label>Time Slot</label>
-        <input type="time" name="time" required>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input
+                        type="text"
+                        name="name"
+                        value="{{ user.name if user else '' }}"
+                        required
+                    >
+                </div>
 
-        <label>Additional Notes</label>
-        <textarea name="notes" placeholder="Please provide details..."></textarea>
+                <div class="form-group">
+                    <label>Appointment Type</label>
+                    <select name="appointment_type" required>
+                        <option value="">Select appointment type</option>
+                        <option>Academic Support</option>
+                        <option>Administrative Help</option>
+                        <option>Document Question</option>
+                        <option>Technical Support</option>
+                        <option>Program Consultation</option>
+                    </select>
+                </div>
 
-        <button type="submit">Submit Request</button>
-    </form>
+                <div class="form-group">
+                    <label>Select Advisor</label>
+                    <select name="advisor" required>
+                        <option value="">Select advisor</option>
+                        <option>Dr. Sarah Johnson</option>
+                        <option>Prof. Michael Chen</option>
+                        <option>Ms. Emily Rodriguez</option>
+                        <option>Academic Advisor</option>
+                        <option>Program Coordinator</option>
+                    </select>
+                </div>
 
-    <div class="advisor-box">
-        <h3>Available Advisors</h3>
-        <p>Dr. Sarah Johnson — Academic Advisor</p>
-        <p>Prof. Michael Chen — Career Counselor</p>
-        <p>Ms. Emily Rodriguez — Financial Aid Officer</p>
+                <div class="form-group">
+                    <label>Preferred Date</label>
+                    <input type="date" name="date" required>
+                </div>
 
-        <div class="help-box">
-            <h3>Need Help?</h3>
-            <p>For urgent help, contact administration directly.</p>
+                <div class="form-group">
+                    <label>Preferred Time</label>
+                    <input type="time" name="time" required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Additional Notes</label>
+                    <textarea
+                        name="notes"
+                        placeholder="Describe the reason for your appointment request..."
+                    ></textarea>
+                </div>
+
+            </div>
+
+            <button type="submit" class="submit-btn">
+                Submit Appointment Request
+            </button>
+
+        </form>
+
+    </section>
+
+    <aside class="appointment-sidebar">
+
+        <div class="sidebar-card">
+            <h3>Available Advisors</h3>
+
+            <div class="advisor-item">
+                <strong>Dr. Sarah Johnson</strong>
+                <span>Academic Advisor</span>
+            </div>
+
+            <div class="advisor-item">
+                <strong>Prof. Michael Chen</strong>
+                <span>Career Counselor</span>
+            </div>
+
+            <div class="advisor-item">
+                <strong>Ms. Emily Rodriguez</strong>
+                <span>Financial Aid Officer</span>
+            </div>
+
+            <div class="advisor-item">
+                <strong>Program Coordinator</strong>
+                <span>Academic Coordination</span>
+            </div>
         </div>
-    </div>
+
+        <div class="sidebar-card">
+            <h3>Appointment Types</h3>
+
+            <ul>
+                <li>Academic Support</li>
+                <li>Administrative Help</li>
+                <li>Document Question</li>
+                <li>Technical Support</li>
+                <li>Program Consultation</li>
+            </ul>
+        </div>
+
+        <div class="help-card">
+            <h3>Need urgent help?</h3>
+            <p>
+                For urgent institutional issues, contact administration directly
+                or use the AI assistant for general guidance.
+            </p>
+            <a href="/demo-site">Return to Portal</a>
+        </div>
+
+    </aside>
+
 </div>
+
+<style>
+
+.appointment-layout {
+    display: grid;
+    grid-template-columns: 2fr 0.9fr;
+    gap: 28px;
+}
+
+.appointment-card,
+.sidebar-card,
+.help-card {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 22px;
+    padding: 26px;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+}
+
+.appointment-card h2,
+.sidebar-card h3,
+.help-card h3 {
+    margin-top: 0;
+}
+
+.section-description {
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 22px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 800;
+    color: #172033;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    outline: none;
+    background: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+}
+
+.form-group textarea {
+    min-height: 130px;
+    resize: vertical;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.submit-btn {
+    margin-top: 22px;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 22px;
+    background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    color: white;
+    font-weight: 900;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.submit-btn:hover {
+    transform: translateY(-1px);
+}
+
+.appointment-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.advisor-item {
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: #f8fafc;
+}
+
+.advisor-item strong {
+    display: block;
+}
+
+.advisor-item span {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.sidebar-card ul {
+    padding-left: 20px;
+    color: #475569;
+    line-height: 1.8;
+}
+
+.help-card {
+    background: linear-gradient(135deg,#eef2ff,#ffffff);
+}
+
+.help-card p {
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.help-card a {
+    display: inline-block;
+    margin-top: 10px;
+    background: #4f46e5;
+    color: white;
+    padding: 11px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 800;
+}
+
+.alert {
+    padding: 16px 18px;
+    border-radius: 14px;
+    margin-bottom: 22px;
+    font-weight: 800;
+}
+
+.success-alert {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.error-alert {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+@media(max-width:1000px) {
+    .appointment-layout,
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+</style>
+
 {% endblock %}

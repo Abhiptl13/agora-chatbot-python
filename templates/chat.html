@@ -1,48 +1,220 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="chat-container">
-    <h2>AI Assistant</h2>
-    <p class="muted">Ask questions about schedules, exams, documents, appointments, or administration support.</p>
 
-    <div id="chatBox" class="chat-box">
-        <div class="bot-message">
-            Hello! I’m Agora Assistant. How can I help you today?
+<div class="portal-page-header">
+    <small>AI Assistant</small>
+    <h1>Agora Assistant Chat</h1>
+    <p>
+        Ask questions about student services, documents, appointments,
+        departments, academic support, administration, or technical support.
+        Your conversation will be saved in MongoDB history.
+    </p>
+</div>
+
+<div class="assistant-layout">
+
+    <section class="assistant-card">
+
+        <div class="assistant-header">
+            <div>
+                <h2>Chat with Agora Assistant</h2>
+                <p>
+                    Connected to MongoDB knowledge base, documents, portal services,
+                    departments, and Groq AI.
+                </p>
+            </div>
+
+            <span class="status-badge">Online</span>
         </div>
-    </div>
 
-    <div class="chat-input">
-        <input 
-            id="question" 
-            type="text" 
-            placeholder="Type your question and press Enter..."
-            autocomplete="off"
-        >
-        <button id="sendBtn" onclick="sendMessage()">➤</button>
-    </div>
+        <div class="quick-prompts">
+            <button onclick="quickAsk('What services are available?')">Services</button>
+            <button onclick="quickAsk('How can I book an appointment?')">Appointments</button>
+            <button onclick="quickAsk('What documents can I search?')">Documents</button>
+            <button onclick="quickAsk('What departments are available?')">Departments</button>
+        </div>
 
-    <p id="loading" class="muted"></p>
+        <div id="chatBox" class="chat-box-modern">
+
+            <div class="message bot">
+                <strong>Agora Assistant</strong>
+                <p>
+                    Hello! I can help you navigate the portal, find documents,
+                    understand services, book appointments, and answer institutional questions.
+                </p>
+            </div>
+
+        </div>
+
+        <p id="loading" class="typing-text"></p>
+
+        <div class="chat-input-modern">
+            <input
+                id="question"
+                type="text"
+                placeholder="Type your question and press Enter..."
+                autocomplete="off"
+            >
+
+            <button id="sendBtn" onclick="sendMessage()">
+                ➤
+            </button>
+        </div>
+
+    </section>
+
+    <aside class="assistant-sidebar">
+
+        <div class="side-card">
+            <h3>What can I ask?</h3>
+            <ul>
+                <li>How can I book an appointment?</li>
+                <li>What documents are available?</li>
+                <li>Where can teachers update attendance?</li>
+                <li>Where can admins see reports?</li>
+                <li>What departments are available?</li>
+            </ul>
+        </div>
+
+        <div class="side-card">
+            <h3>Connected Sources</h3>
+            <p>Knowledge Base</p>
+            <p>Document Center</p>
+            <p>Portal Services</p>
+            <p>Academic Departments</p>
+            <p>Website Content</p>
+        </div>
+
+        <div class="side-card highlight-card">
+            <h3>Need a page?</h3>
+            <p>
+                The assistant can guide you to the correct section or page
+                based on your question.
+            </p>
+            <a href="/demo-site">Return to Portal</a>
+        </div>
+
+    </aside>
+
 </div>
 
 <script>
 function escapeHTML(text) {
-    return text
+    return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
+}
+
+function getActionLinks(source, answer, question) {
+    const text = `${source} ${answer} ${question}`.toLowerCase();
+    const actions = [];
+
+    if (text.includes("appointment") || text.includes("advisor") || text.includes("book")) {
+        actions.push({ label: "Open Appointment Page", url: "/appointments" });
+        actions.push({ label: "View Services Section", url: "/demo-site#services" });
+    }
+
+    if (text.includes("document") || text.includes("course") || text.includes("form") || text.includes("guide")) {
+        actions.push({ label: "Open Document Center", url: "/documents" });
+        actions.push({ label: "View Documents Section", url: "/demo-site#documents" });
+    }
+
+    if (text.includes("department") || text.includes("computer science") || text.includes("business") || text.includes("design")) {
+        actions.push({ label: "View Departments Section", url: "/demo-site#departments" });
+    }
+
+    if (text.includes("service") || text.includes("support") || text.includes("registrar")) {
+        actions.push({ label: "View Services Section", url: "/demo-site#services" });
+    }
+
+    if (text.includes("history") || text.includes("conversation")) {
+        actions.push({ label: "Open Conversation History", url: "/history" });
+    }
+
+    const unique = [];
+    const seen = new Set();
+
+    actions.forEach(action => {
+        const key = `${action.label}-${action.url}`;
+
+        if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(action);
+        }
+    });
+
+    return unique.slice(0, 3);
+}
+
+function handleAction(url) {
+    window.location.href = url;
+}
+
+function addMessage(text, sender, source = null, actions = []) {
+    const chatBox = document.getElementById("chatBox");
+
+    const message = document.createElement("div");
+    message.className = `message ${sender}`;
+
+    let content = "";
+
+    if (sender === "bot") {
+        content += `<strong>Agora Assistant</strong>`;
+    } else {
+        content += `<strong>You</strong>`;
+    }
+
+    content += `<p>${escapeHTML(text)}</p>`;
+
+    if (source) {
+        content += `<small><strong>Source:</strong> ${escapeHTML(source)}</small>`;
+    }
+
+    if (actions.length > 0) {
+        content += `<div class="action-list">`;
+
+        actions.forEach(action => {
+            content += `
+                <button class="action-link" data-url="${escapeHTML(action.url)}">
+                    ${escapeHTML(action.label)}
+                </button>
+            `;
+        });
+
+        content += `</div>`;
+    }
+
+    message.innerHTML = content;
+
+    chatBox.appendChild(message);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    message.querySelectorAll(".action-link").forEach(button => {
+        button.addEventListener("click", function () {
+            handleAction(this.dataset.url);
+        });
+    });
+}
+
+function quickAsk(question) {
+    document.getElementById("question").value = question;
+    sendMessage();
 }
 
 function sendMessage() {
     const input = document.getElementById("question");
     const sendBtn = document.getElementById("sendBtn");
     const question = input.value.trim();
-    const chatBox = document.getElementById("chatBox");
     const loading = document.getElementById("loading");
 
     if (question === "") {
         return;
     }
 
-    chatBox.innerHTML += `<div class="user-message">${escapeHTML(question)}</div>`;
+    addMessage(question, "user");
+
     input.value = "";
     loading.innerText = "Agora Assistant is typing...";
     sendBtn.disabled = true;
@@ -58,34 +230,28 @@ function sendMessage() {
         sendBtn.disabled = false;
 
         if (data.error) {
-            chatBox.innerHTML += `
-                <div class="bot-message error">
-                    ${escapeHTML(data.error)}
-                </div>
-            `;
+            addMessage(data.error, "bot", "Error");
         } else {
-            chatBox.innerHTML += `
-                <div class="bot-message">
-                    ${escapeHTML(data.answer)}
-                    <br><small><strong>Source:</strong> ${escapeHTML(data.source)}</small>
-                </div>
-            `;
+            const actions = getActionLinks(
+                data.source || "",
+                data.answer || "",
+                question
+            );
+
+            addMessage(
+                data.answer || "I could not find a response.",
+                "bot",
+                data.source || "Agora Assistant",
+                actions
+            );
         }
 
-        chatBox.scrollTop = chatBox.scrollHeight;
         input.focus();
     })
     .catch(() => {
         loading.innerText = "";
         sendBtn.disabled = false;
-
-        chatBox.innerHTML += `
-            <div class="bot-message error">
-                Error: Could not process your message.
-            </div>
-        `;
-
-        chatBox.scrollTop = chatBox.scrollHeight;
+        addMessage("Error: Could not process your message.", "bot", "Connection Error");
         input.focus();
     });
 }
@@ -97,4 +263,226 @@ document.getElementById("question").addEventListener("keydown", function(event) 
     }
 });
 </script>
+
+<style>
+
+.assistant-layout{
+    display:grid;
+    grid-template-columns:2.3fr 0.9fr;
+    gap:28px;
+}
+
+.assistant-card,
+.side-card{
+    background:white;
+    border:1px solid #dbe3ef;
+    border-radius:22px;
+    padding:24px;
+    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+}
+
+.assistant-header{
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    align-items:flex-start;
+    margin-bottom:18px;
+}
+
+.assistant-header h2{
+    margin:0 0 8px;
+}
+
+.assistant-header p{
+    margin:0;
+    color:#64748b;
+    line-height:1.6;
+}
+
+.status-badge{
+    background:#dcfce7;
+    color:#166534;
+    padding:8px 13px;
+    border-radius:999px;
+    font-weight:900;
+    font-size:12px;
+}
+
+.quick-prompts{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:18px;
+}
+
+.quick-prompts button{
+    border:1px solid #dbe3ef;
+    background:#eef2ff;
+    color:#3730a3;
+    border-radius:999px;
+    padding:9px 13px;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.chat-box-modern{
+    height:520px;
+    overflow-y:auto;
+    background:#f8fafc;
+    border:1px solid #dbe3ef;
+    border-radius:20px;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.message{
+    max-width:78%;
+    padding:15px;
+    border-radius:18px;
+    line-height:1.6;
+}
+
+.message strong{
+    display:block;
+    margin-bottom:6px;
+}
+
+.message p{
+    margin:0;
+    white-space:pre-line;
+}
+
+.message small{
+    display:block;
+    margin-top:8px;
+    color:#64748b;
+}
+
+.message.bot{
+    align-self:flex-start;
+    background:white;
+    border:1px solid #dbe3ef;
+    border-bottom-left-radius:5px;
+}
+
+.message.user{
+    align-self:flex-end;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:white;
+    border-bottom-right-radius:5px;
+}
+
+.message.user small{
+    color:white;
+}
+
+.typing-text{
+    min-height:22px;
+    color:#64748b;
+    margin:12px 4px;
+}
+
+.chat-input-modern{
+    display:flex;
+    gap:12px;
+    margin-top:12px;
+}
+
+.chat-input-modern input{
+    flex:1;
+    border:1px solid #dbe3ef;
+    border-radius:14px;
+    padding:15px;
+    font-size:15px;
+    outline:none;
+}
+
+.chat-input-modern input:focus{
+    border-color:#4f46e5;
+    box-shadow:0 0 0 3px rgba(79,70,229,0.12);
+}
+
+.chat-input-modern button{
+    width:54px;
+    border:none;
+    border-radius:14px;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:white;
+    font-size:20px;
+    cursor:pointer;
+}
+
+.assistant-sidebar{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+.side-card h3{
+    margin-top:0;
+}
+
+.side-card ul{
+    padding-left:20px;
+    color:#475569;
+    line-height:1.8;
+}
+
+.side-card p{
+    color:#64748b;
+    line-height:1.5;
+}
+
+.highlight-card{
+    background:linear-gradient(135deg,#eef2ff,#ffffff);
+}
+
+.highlight-card a{
+    display:inline-block;
+    background:#4f46e5;
+    color:white;
+    padding:11px 14px;
+    border-radius:12px;
+    text-decoration:none;
+    font-weight:800;
+}
+
+.action-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:12px;
+}
+
+.action-link{
+    border:none;
+    background:#eef2ff;
+    color:#3730a3;
+    border-radius:10px;
+    padding:9px 11px;
+    font-weight:800;
+    cursor:pointer;
+    text-align:left;
+}
+
+.action-link:hover{
+    background:#dbeafe;
+}
+
+@media(max-width:1000px){
+
+    .assistant-layout{
+        grid-template-columns:1fr;
+    }
+
+    .message{
+        max-width:92%;
+    }
+
+}
+
+</style>
+
 {% endblock %}

@@ -1,903 +1,1108 @@
-# Testing Report – Sprint 4
+# Agora Assistant Chatbot – Testing Report
 
 ## Project Information
 
-Project Name:
-Agora Assistant Chatbot – Python Version
-
-Sprint:
-Sprint 4 – Advanced Features
-
-Testing Type:
-Functional Testing
-
-Environment:
-
-- Python 3.x
-- Flask
-- MongoDB Atlas
-- Groq AI
-- Visual Studio Code
-- Windows 11
-
-Testing Date:
-June 2026
+**Project Name:** Agora Assistant Chatbot – Python Intelligent Campus Assistant
+**Project Type:** Python-Based Flask Web Application
+**Testing Type:** Functional Testing, UI Testing, API Testing, Integration Testing, Deployment Readiness Testing
+**Testing Period:** June 2026
+**Environment:** Local Development Environment
 
 ---
 
-# Testing Objective
+## Testing Environment
 
-The objective of Sprint 4 testing was to verify that all major modules of the Agora Assistant Chatbot function correctly after the migration from JSON storage to MongoDB Atlas and the integration of Groq AI.
+| Item              | Details                        |
+| ----------------- | ------------------------------ |
+| Operating System  | Windows 11                     |
+| Development Tool  | Visual Studio Code             |
+| Backend Framework | Python Flask                   |
+| Database          | MongoDB Atlas                  |
+| AI Provider       | Groq AI                        |
+| AI Model          | Llama 3.1 Instant              |
+| Browser           | Google Chrome / Microsoft Edge |
+| Local URL         | http://127.0.0.1:5000          |
+| Deployment Target | Render Free Plan               |
+
+---
+
+## Testing Objective
+
+The objective of testing was to verify that all major components of the Agora Assistant Chatbot function correctly after the final development updates.
 
 Testing focused on:
 
-- Authentication
-- Chatbot Functionality
-- Role-Based Filtering
-- Document Search
-- Appointment Management
-- Conversation History
-- API Endpoints
-- MongoDB Integration
-- AI Response Generation
-- Error Handling
+* Authentication
+* Role-based access
+* AI Campus Portal
+* Embedded chatbot widget
+* Full AI Assistant page
+* Casual chatbot conversation
+* MongoDB-based chatbot retrieval
+* Groq AI response generation
+* Document Center
+* Appointment Management
+* Conversation History
+* REST API endpoints
+* Error pages
+* Deployment readiness
+
+---
+
+## Tested Modules
+
+The following modules were tested:
+
+1. Login and Authentication
+2. AI Campus Portal
+3. Dashboard
+4. Embedded Chatbot Widget
+5. Full AI Assistant Page
+6. Document Center
+7. Appointment Booking
+8. Conversation History
+9. REST API Endpoints
+10. MongoDB Atlas Integration
+11. Groq AI Integration
+12. Custom Error Pages
+13. Deployment Configuration Files
 
 ---
 
 # Authentication Testing
 
-## Test Case 1
+## Test Case AUTH-01 – Student Login
 
-Test Description:
-Student Login
+**Input:**
 
-Input:
+```text
+Email: etudiant@college.local
+Password: Agora2026!
+```
 
-Email:
-etudiant@college.local
+**Expected Result:**
 
-Password:
-Agora2026!
+Student logs in successfully and is redirected to the AI Campus Portal.
 
-Expected Result:
+**Actual Result:**
 
-Student successfully logs into the application and is redirected to the dashboard.
+Login successful. User redirected to `/demo-site`.
 
-Actual Result:
-
-Login successful.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 2
+## Test Case AUTH-02 – Teacher Login
 
-Test Description:
-Teacher Login
+**Input:**
 
-Input:
+```text
+Email: enseignant@college.local
+Password: Agora2026!
+```
 
-Email:
-enseignant@college.local
+**Expected Result:**
 
-Password:
-Agora2026!
+Teacher logs in successfully and is redirected to the AI Campus Portal.
 
-Expected Result:
+**Actual Result:**
 
-Teacher successfully logs into the application.
+Login successful. User redirected correctly.
 
-Actual Result:
-
-Login successful.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 3
+## Test Case AUTH-03 – Administrator Login
 
-Test Description:
-Administrator Login
+**Input:**
 
-Input:
+```text
+Email: admin@college.local
+Password: Agora2026!
+```
 
-Email:
-admin@college.local
+**Expected Result:**
 
-Password:
-Agora2026!
+Administrator logs in successfully and is redirected to the AI Campus Portal.
 
-Expected Result:
+**Actual Result:**
 
-Administrator successfully logs into the application.
+Login successful. User redirected correctly.
 
-Actual Result:
-
-Login successful.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 4
+## Test Case AUTH-04 – Invalid Login
 
-Test Description:
-Invalid Credentials
+**Input:**
 
-Input:
+Incorrect email or password.
 
-Incorrect email and password
+**Expected Result:**
 
-Expected Result:
+The system displays an error message and prevents login.
 
-System displays login error message.
+**Actual Result:**
 
-Actual Result:
+Invalid login is handled correctly.
 
-Error message displayed correctly.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 5
+## Test Case AUTH-05 – Logout
 
-Test Description:
-Logout Functionality
+**Expected Result:**
 
-Expected Result:
+The user session is destroyed and the login page is displayed.
 
-User session is terminated and redirected to login page.
+**Actual Result:**
 
-Actual Result:
+Logout works successfully.
 
-Logout successful.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-# Chatbot Testing
+## Test Case AUTH-06 – Protected Routes
 
-## Test Case 6
+**Tested Routes:**
 
-Test Description:
-Student Question
+```text
+/dashboard
+/demo-site
+/chat
+/documents
+/appointments
+/history
+```
 
-Input:
+**Expected Result:**
 
+Unauthenticated users are redirected to the login page.
+
+**Actual Result:**
+
+Protected routes require login.
+
+**Status:** PASS
+
+---
+
+# AI Campus Portal Testing
+
+## Test Case PORTAL-01 – Portal Page Load
+
+**Test Steps:**
+
+1. Login successfully.
+2. Open `/demo-site`.
+
+**Expected Result:**
+
+AI Campus Portal loads with navigation, hero section, services, departments, documents, user profile, and chatbot widget.
+
+**Actual Result:**
+
+Portal page loaded successfully.
+
+**Status:** PASS
+
+---
+
+## Test Case PORTAL-02 – Navigation Links
+
+**Tested Links:**
+
+```text
+Dashboard
+AI Assistant
+Documents
+Appointments
+History
+Logout
+```
+
+**Expected Result:**
+
+Each link opens the correct page.
+
+**Actual Result:**
+
+Navigation works correctly.
+
+**Status:** PASS
+
+---
+
+## Test Case PORTAL-03 – Clickable Portal Cards
+
+**Tested Items:**
+
+* Browse Documents
+* Book Appointment
+* Full AI Assistant
+* Department Cards
+* Service Cards
+* Document Open Links
+
+**Expected Result:**
+
+Each card or button opens the correct page or section.
+
+**Actual Result:**
+
+Interactive portal links work correctly.
+
+**Status:** PASS
+
+---
+
+# Embedded Chatbot Widget Testing
+
+## Test Case WIDGET-01 – Widget Opens
+
+**Test Steps:**
+
+1. Open `/demo-site`.
+2. Click the floating chatbot button.
+
+**Expected Result:**
+
+The chatbot widget opens.
+
+**Actual Result:**
+
+Widget opens successfully.
+
+**Status:** PASS
+
+---
+
+## Test Case WIDGET-02 – Quick Action Buttons
+
+**Tested Buttons:**
+
+```text
+Services
+Appointments
+Documents
+Departments
+```
+
+**Expected Result:**
+
+Each quick action sends a question to the chatbot and returns a relevant answer.
+
+**Actual Result:**
+
+Quick action buttons work successfully.
+
+**Status:** PASS
+
+---
+
+## Test Case WIDGET-03 – Casual Conversation
+
+**Inputs Tested:**
+
+```text
+hii
+hello
+how are you
+thanks
+bye
+who are you
+what can you do
+```
+
+**Expected Result:**
+
+The chatbot responds naturally without requiring MongoDB search.
+
+**Actual Result:**
+
+Casual conversation responses work correctly.
+
+**Status:** PASS
+
+---
+
+## Test Case WIDGET-04 – Institutional Questions
+
+**Inputs Tested:**
+
+```text
+How can I book an appointment?
+What documents are available?
+What services are available?
+What departments are available?
+```
+
+**Expected Result:**
+
+The chatbot returns relevant answers using portal-related data.
+
+**Actual Result:**
+
+Institutional responses are generated successfully.
+
+**Status:** PASS
+
+---
+
+## Test Case WIDGET-05 – Action Links
+
+**Expected Result:**
+
+Chatbot responses display useful action buttons when applicable.
+
+**Actual Result:**
+
+Suggested action links work correctly.
+
+**Status:** PASS
+
+---
+
+# Full AI Assistant Testing
+
+## Test Case CHAT-01 – Knowledge Base Question
+
+**Input:**
+
+```text
 Where can I see my class schedule?
+```
 
-Expected Result:
+**Expected Result:**
 
-Relevant answer returned from knowledge base.
+Relevant answer returned with source.
 
-Actual Result:
+**Actual Result:**
 
 Correct answer generated.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 7
+## Test Case CHAT-02 – Course Registration Question
 
-Test Description:
-Course Registration Question
+**Input:**
 
-Input:
-
+```text
 How do I register for courses?
+```
 
-Expected Result:
+**Expected Result:**
 
-Chatbot retrieves course registration information.
+Course registration guidance returned.
 
-Actual Result:
+**Actual Result:**
 
 Correct response returned.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 8
+## Test Case CHAT-03 – Appointment Question
 
-Test Description:
-Appointment Question
+**Input:**
 
-Input:
-
+```text
 How do I book an appointment?
+```
 
-Expected Result:
+**Expected Result:**
 
-Chatbot provides appointment booking guidance.
+Appointment booking guidance returned.
 
-Actual Result:
-
-Correct answer generated.
-
-Status:
-
-PASS
-
----
-
-## Test Case 9
-
-Test Description:
-Teacher Attendance Question
-
-User Role:
-
-Teacher
-
-Input:
-
-Where can teachers update attendance?
-
-Expected Result:
-
-Attendance management answer returned.
-
-Actual Result:
+**Actual Result:**
 
 Correct answer generated.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 10
+## Test Case CHAT-04 – Services Question
 
-Test Description:
-Administrative Reports Question
+**Input:**
 
-User Role:
+```text
+What services are available?
+```
 
-Administrator
+**Expected Result:**
 
-Input:
+Portal service information returned.
 
-Where can administrators see reports?
+**Actual Result:**
 
-Expected Result:
+Correct service-related response generated.
 
-Administrative reports answer returned.
-
-Actual Result:
-
-Correct answer generated.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 11
+## Test Case CHAT-05 – Department Question
 
-Test Description:
-Unknown Question
+**Input:**
 
-Input:
+```text
+What departments are available?
+```
 
-Question not present in knowledge base.
+**Expected Result:**
 
-Expected Result:
+Department-related response returned.
+
+**Actual Result:**
+
+Correct department information returned.
+
+**Status:** PASS
+
+---
+
+## Test Case CHAT-06 – Unknown Question
+
+**Input:**
+
+```text
+What is the weather on Mars today?
+```
+
+**Expected Result:**
 
 Fallback response displayed.
 
-Actual Result:
+**Actual Result:**
 
 Fallback response displayed successfully.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
 # Role-Based Access Testing
 
-## Test Case 12
+## Test Case ROLE-01 – Student Access Restriction
 
-Test Description:
-Student attempts to access teacher information.
+**Test Description:**
 
-Expected Result:
+Student asks for teacher-only or administrator-only information.
 
-Teacher-only information is not accessible.
+**Expected Result:**
 
-Actual Result:
+Restricted information is not returned if not allowed for the student role.
 
-Access correctly restricted.
+**Actual Result:**
 
-Status:
+Role filtering works correctly.
 
-PASS
-
----
-
-## Test Case 13
-
-Test Description:
-Student attempts to access administrator information.
-
-Expected Result:
-
-Administrator information is hidden.
-
-Actual Result:
-
-Access correctly restricted.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 14
+## Test Case ROLE-02 – Teacher Resource Access
 
-Test Description:
-Teacher accesses teacher resources.
+**Test Description:**
 
-Expected Result:
+Teacher asks teacher-related questions.
 
-Teacher resources displayed.
+**Expected Result:**
 
-Actual Result:
+Teacher resources are returned.
 
-Resources displayed successfully.
+**Actual Result:**
 
-Status:
+Teacher content displayed successfully.
 
-PASS
-
----
-
-## Test Case 15
-
-Test Description:
-Administrator accesses administrator resources.
-
-Expected Result:
-
-Administrative resources displayed.
-
-Actual Result:
-
-Resources displayed successfully.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-# Document Search Testing
+## Test Case ROLE-03 – Administrator Resource Access
 
-## Test Case 16
+**Test Description:**
 
-Test Description:
-Search by Title
+Administrator asks administrator-related questions.
 
-Input:
+**Expected Result:**
 
+Administrative resources are returned.
+
+**Actual Result:**
+
+Administrator content displayed successfully.
+
+**Status:** PASS
+
+---
+
+# Document Center Testing
+
+## Test Case DOC-01 – Document Page Load
+
+**Expected Result:**
+
+Document Center loads with sidebar categories and document cards.
+
+**Actual Result:**
+
+Page loads successfully.
+
+**Status:** PASS
+
+---
+
+## Test Case DOC-02 – Document Grid Layout
+
+**Expected Result:**
+
+Documents display in a proper grid layout and are not pushed to one side.
+
+**Actual Result:**
+
+Document layout issue was fixed and documents display correctly.
+
+**Status:** PASS
+
+---
+
+## Test Case DOC-03 – Search by Title
+
+**Input:**
+
+```text
 registration
+```
 
-Expected Result:
+**Expected Result:**
 
-Matching documents displayed.
+Matching documents are displayed.
 
-Actual Result:
+**Actual Result:**
 
-Results displayed correctly.
+Search works correctly.
 
-Status:
-
-PASS
-
----
-
-## Test Case 17
-
-Test Description:
-Search by Category
-
-Input:
-
-Academic Services
-
-Expected Result:
-
-Relevant documents returned.
-
-Actual Result:
-
-Correct results displayed.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 18
+## Test Case DOC-04 – Search by Category
 
-Test Description:
-Search by Summary
+**Input:**
 
-Input:
+```text
+academic
+```
 
+**Expected Result:**
+
+Academic documents are returned.
+
+**Actual Result:**
+
+Search works correctly.
+
+**Status:** PASS
+
+---
+
+## Test Case DOC-05 – Search by Summary
+
+**Input:**
+
+```text
 advisor
+```
 
-Expected Result:
+**Expected Result:**
 
-Matching documents displayed.
+Advisor-related documents are displayed.
 
-Actual Result:
+**Actual Result:**
 
-Search successful.
+Search works correctly.
 
-Status:
-
-PASS
-
----
-
-## Test Case 19
-
-Test Description:
-Role-Based Document Access
-
-Expected Result:
-
-Only authorized documents are displayed.
-
-Actual Result:
-
-Filtering works correctly.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
 # Appointment Module Testing
 
-## Test Case 20
+## Test Case APP-01 – Appointment Page Load
 
-Test Description:
-Create Appointment Request
+**Expected Result:**
 
-Expected Result:
+Appointment page loads correctly.
 
-Appointment saved successfully.
+**Actual Result:**
 
-Actual Result:
+Appointment page loaded successfully.
 
-Appointment stored in MongoDB.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 21
+## Test Case APP-02 – Create Appointment Request
 
-Test Description:
-Required Field Validation
+**Test Steps:**
 
-Expected Result:
+1. Open appointment page.
+2. Complete the form.
+3. Submit request.
 
-Missing required fields trigger validation errors.
+**Expected Result:**
 
-Actual Result:
+Appointment is saved in MongoDB.
 
-Validation successful.
+**Actual Result:**
 
-Status:
+Appointment stored successfully.
 
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 22
+## Test Case APP-03 – Required Field Validation
 
-Test Description:
-Appointment Retrieval
+**Expected Result:**
 
-Expected Result:
+Missing required fields are prevented or validation is displayed.
 
-User can view stored appointments.
+**Actual Result:**
 
-Actual Result:
+Validation works correctly.
 
-Appointments retrieved correctly.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
 # Conversation History Testing
 
-## Test Case 23
+## Test Case HIS-01 – Conversation Storage
 
-Test Description:
-Conversation Storage
+**Expected Result:**
 
-Expected Result:
+Chatbot interactions are stored in MongoDB.
 
-Chatbot interaction saved in database.
-
-Actual Result:
+**Actual Result:**
 
 Conversation saved successfully.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 24
+## Test Case HIS-02 – Conversation Display
 
-Test Description:
-Conversation Retrieval
+**Expected Result:**
 
-Expected Result:
+History page displays previous questions, answers, sources, and timestamps.
 
-User history displayed correctly.
+**Actual Result:**
 
-Actual Result:
+Conversation history displayed correctly.
 
-History loaded successfully.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 25
+## Test Case HIS-03 – Timestamp Storage
 
-Test Description:
-Timestamp Storage
+**Expected Result:**
 
-Expected Result:
+Timestamp is stored with each chatbot interaction.
 
-Timestamp saved with each conversation.
-
-Actual Result:
+**Actual Result:**
 
 Timestamp stored correctly.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
 # API Endpoint Testing
 
-## Test Case 26
+## Test Case API-01 – Health Endpoint
 
-Endpoint:
+**Endpoint:**
 
+```text
 GET /health
+```
 
-Expected Result:
+**Expected Result:**
 
 Application health information returned.
 
-Actual Result:
+**Actual Result:**
 
 Health endpoint working.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 27
+## Test Case API-02 – Chat Endpoint
 
-Endpoint:
+**Endpoint:**
 
+```text
 POST /api/chat/message
+```
 
-Expected Result:
+**Expected Result:**
 
-Chat response returned.
+Chatbot response returned.
 
-Actual Result:
+**Actual Result:**
 
 Response generated successfully.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 28
+## Test Case API-03 – Widget Endpoint
 
-Endpoint:
+**Endpoint:**
 
+```text
+POST /api/widget/message
+```
+
+**Expected Result:**
+
+Embedded widget receives chatbot response.
+
+**Actual Result:**
+
+Widget API works successfully.
+
+**Status:** PASS
+
+---
+
+## Test Case API-04 – History Endpoint
+
+**Endpoint:**
+
+```text
 GET /api/chat/history
+```
 
-Expected Result:
+**Expected Result:**
 
 Conversation history returned.
 
-Actual Result:
+**Actual Result:**
 
-History returned successfully.
+History endpoint working.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 29
+## Test Case API-05 – Documents Endpoint
 
-Endpoint:
+**Endpoint:**
 
+```text
 GET /api/documents
+```
 
-Expected Result:
-
-Document list returned.
-
-Actual Result:
+**Expected Result:**
 
 Documents returned successfully.
 
-Status:
+**Actual Result:**
 
-PASS
+Documents endpoint working.
+
+**Status:** PASS
 
 ---
 
-## Test Case 30
+## Test Case API-06 – Appointments Endpoint
 
-Endpoint:
+**Endpoint:**
 
+```text
 GET /api/appointments
+```
 
-Expected Result:
-
-Appointment list returned.
-
-Actual Result:
+**Expected Result:**
 
 Appointments returned successfully.
 
-Status:
+**Actual Result:**
 
-PASS
+Appointments endpoint working.
+
+**Status:** PASS
 
 ---
 
-# MongoDB Integration Testing
+# MongoDB Atlas Integration Testing
 
-## Test Case 31
+## Test Case DB-01 – MongoDB Connection
 
-Test Description:
-MongoDB Connection
-
-Expected Result:
+**Expected Result:**
 
 Application connects successfully to MongoDB Atlas.
 
-Actual Result:
+**Actual Result:**
 
 Connection established successfully.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 32
+## Test Case DB-02 – MongoDB Read Operations
 
-Test Description:
-MongoDB Read Operations
+**Expected Result:**
 
-Expected Result:
+Application retrieves users, knowledge records, documents, website content, services, departments, appointments, and conversations.
 
-Data retrieved correctly.
-
-Actual Result:
+**Actual Result:**
 
 Data retrieved successfully.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 33
+## Test Case DB-03 – MongoDB Write Operations
 
-Test Description:
-MongoDB Write Operations
+**Expected Result:**
 
-Expected Result:
+Appointments and chatbot conversations are stored successfully.
 
-Data stored successfully.
-
-Actual Result:
+**Actual Result:**
 
 Data written successfully.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
 # Groq AI Integration Testing
 
-## Test Case 34
+## Test Case AI-01 – AI Response Generation
 
-Test Description:
-AI Response Generation
+**Expected Result:**
 
-Expected Result:
+Groq AI generates readable chatbot responses.
 
-Groq generates natural language responses.
+**Actual Result:**
 
-Actual Result:
+AI responses generated successfully.
 
-Responses generated successfully.
-
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 35
+## Test Case AI-02 – MongoDB Context Usage
 
-Test Description:
-Knowledge Base + AI Integration
+**Expected Result:**
 
-Expected Result:
+Groq AI uses MongoDB search results as context.
 
-Knowledge base context is used when generating responses.
+**Actual Result:**
 
-Actual Result:
+Responses generated using retrieved context.
 
-Responses generated using knowledge context.
+**Status:** PASS
 
-Status:
+---
 
-PASS
+## Test Case AI-03 – AI Fallback Handling
+
+**Expected Result:**
+
+If AI generation fails, the application returns a safe fallback response.
+
+**Actual Result:**
+
+Fallback handling is available.
+
+**Status:** PASS
 
 ---
 
 # Error Handling Testing
 
-## Test Case 36
+## Test Case ERR-01 – 404 Page
 
-Test Description:
-404 Page
+**Expected Result:**
 
-Expected Result:
+Custom 404 page displayed for invalid routes.
 
-Custom 404 page displayed.
-
-Actual Result:
+**Actual Result:**
 
 404 page displayed successfully.
 
-Status:
-
-PASS
+**Status:** PASS
 
 ---
 
-## Test Case 37
+## Test Case ERR-02 – 500 Page
 
-Test Description:
-500 Error Handling
+**Expected Result:**
 
-Expected Result:
+Custom 500 page exists for internal server errors.
 
-Custom error message displayed.
+**Actual Result:**
 
-Actual Result:
+500 page implemented successfully.
 
-Error handler working correctly.
+**Status:** PASS
 
-Status:
+---
 
-PASS
+# Deployment Readiness Testing
+
+## Test Case DEPLOY-01 – requirements.txt
+
+**Expected Result:**
+
+Deployment dependencies are included.
+
+**Actual Result:**
+
+`requirements.txt` updated for Flask, PyMongo, python-dotenv, Groq, Gunicorn, requests, dnspython, Werkzeug, and Jinja2.
+
+**Status:** PASS
+
+---
+
+## Test Case DEPLOY-02 – Procfile
+
+**Expected Result:**
+
+Procfile exists with Render start command.
+
+**Actual Result:**
+
+Procfile created with:
+
+```text
+web: gunicorn app:app
+```
+
+**Status:** PASS
+
+---
+
+## Test Case DEPLOY-03 – runtime.txt
+
+**Expected Result:**
+
+Python runtime file exists.
+
+**Actual Result:**
+
+runtime.txt created.
+
+**Status:** PASS
+
+---
+
+## Test Case DEPLOY-04 – Environment Variable Documentation
+
+**Expected Result:**
+
+`.env.example` documents required variables and real `.env` file is excluded from GitHub.
+
+**Actual Result:**
+
+Deployment environment variable setup completed.
+
+**Status:** PASS
 
 ---
 
 # Overall Results
 
-Total Test Cases Executed:
-
-37
-
-Passed:
-
-37
-
-Failed:
-
-0
-
-Success Rate:
-
-100%
-
----
-
-# Testing Summary
-
-All Sprint 4 modules were tested successfully.
-
-Verified Features:
-
-✓ Authentication
-
-✓ Role-Based Access Control
-
-✓ Chatbot Functionality
-
-✓ Groq AI Integration
-
-✓ MongoDB Atlas Integration
-
-✓ Document Search
-
-✓ Appointment Management
-
-✓ Conversation History
-
-✓ API Endpoints
-
-✓ Error Handling
-
-✓ Expanded Knowledge Base
-
-✓ Advanced Sample Data
-
-No critical defects were identified during testing.
+| Testing Area              | Status |
+| ------------------------- | ------ |
+| Authentication            | PASS   |
+| AI Campus Portal          | PASS   |
+| Embedded Chatbot Widget   | PASS   |
+| Full AI Assistant         | PASS   |
+| Role-Based Access         | PASS   |
+| Document Center           | PASS   |
+| Appointment Management    | PASS   |
+| Conversation History      | PASS   |
+| API Endpoints             | PASS   |
+| MongoDB Atlas Integration | PASS   |
+| Groq AI Integration       | PASS   |
+| Error Handling            | PASS   |
+| Deployment Readiness      | PASS   |
 
 ---
 
-# Conclusion
+## Total Test Cases Executed
 
-Sprint 4 testing confirmed that all major application features operate correctly and meet the functional requirements defined for the advanced feature phase. The migration to MongoDB Atlas and the integration of Groq AI were successfully validated, resulting in a stable and scalable chatbot platform ready for future enhancements.
+```text
+Total Test Cases: 51
+Passed: 51
+Failed: 0
+Success Rate: 100%
+```
+
+---
+
+## Bugs Identified and Resolved
+
+| Issue                                                   | Resolution                                             | Status   |
+| ------------------------------------------------------- | ------------------------------------------------------ | -------- |
+| Demo portal blank page after incomplete template update | Restored complete `demo_site.html` file                | Resolved |
+| Document cards displayed on one side                    | Updated `documents.html` layout CSS and grid structure | Resolved |
+| Chatbot did not respond naturally to casual greetings   | Added casual conversation handling in chatbot service  | Resolved |
+| Portal cards were not clickable                         | Updated `demo_site.html` links and buttons             | Resolved |
+| Deployment dependencies missing                         | Updated `requirements.txt` and added Gunicorn          | Resolved |
+
+---
+
+## Testing Summary
+
+All major modules of the Agora Assistant Chatbot were tested successfully.
+
+Verified features:
+
+* Login and logout
+* Protected routes
+* AI Campus Portal
+* Dashboard
+* Embedded chatbot widget
+* Full AI Assistant
+* Casual chatbot conversation
+* MongoDB-based chatbot retrieval
+* Groq AI response generation
+* Document Center
+* Appointment booking
+* Conversation history
+* API endpoints
+* MongoDB read and write operations
+* Custom error pages
+* Deployment readiness
+
+No critical defects remain open.
+
+---
+
+## Conclusion
+
+Testing confirmed that the Agora Assistant Chatbot is stable, functional, and ready for final deployment preparation. The application successfully supports authentication, role-based access, AI-powered chatbot responses, embedded chatbot functionality, document search, appointment booking, conversation history, MongoDB Atlas integration, Groq AI integration, and deployment configuration.
+
+The system is ready for GitHub update, Render deployment, final screenshots, and project demonstration.

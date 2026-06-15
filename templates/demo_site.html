@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>College Lasalle Portal</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='widget/widget.css') }}">
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --secondary: #0ea5e9;
+            --soft-bg: #eef2ff;
+            --card-bg: #ffffff;
+            --text: #172033;
+            --muted: #64748b;
+            --border: #dbe3ef;
+            --accent: #fef3c7;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f8fafc;
+            color: var(--text);
+        }
+
+        .navbar {
+            min-height: 82px;
+            background: rgba(255,255,255,0.95);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 56px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .brand-text strong {
+            display: block;
+            font-size: 18px;
+        }
+
+        .brand-text span {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            font-weight: 700;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--accent);
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        .profile strong {
+            display: block;
+            font-size: 14px;
+        }
+
+        .profile span {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: capitalize;
+        }
+
+        .logout-btn {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 13px;
+            border: 1px solid #fecaca;
+        }
+
+        .logout-btn:hover {
+            background: #fecaca;
+        }
+
+        .hero {
+            min-height: 620px;
+            background:
+                radial-gradient(circle at top right, rgba(14,165,233,0.18), transparent 35%),
+                linear-gradient(135deg, #eef2ff, #f8fafc 60%, #ecfeff);
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 56px;
+            padding: 80px 80px 60px;
+            align-items: center;
+        }
+
+        .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--primary);
+            font-weight: 900;
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+
+        .hero h1 {
+            font-size: 68px;
+            line-height: 1.04;
+            font-weight: 800;
+            margin: 0 0 28px;
+            max-width: 780px;
+        }
+
+        .hero p {
+            max-width: 710px;
+            color: #475569;
+            font-size: 20px;
+            line-height: 1.7;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 34px;
+        }
+
+        .btn {
+            border-radius: 12px;
+            padding: 15px 20px;
+            font-weight: 800;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-light {
+            background: white;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .portal-preview {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            padding: 26px;
+            box-shadow: 0 30px 80px rgba(15,23,42,0.12);
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .status-pill {
+            background: #dcfce7;
+            color: #166534;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .preview-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 18px;
+            min-height: 130px;
+            text-decoration: none;
+            color: var(--text);
+            transition: 0.2s;
+        }
+
+        .preview-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .preview-card strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .preview-card span {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .section {
+            padding: 60px 80px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 22px;
+            margin-top: -80px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .service-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 26px;
+            min-height: 170px;
+            box-shadow: 0 18px 40px rgba(15,23,42,0.06);
+            text-decoration: none;
+            color: var(--text);
+            transition: 0.2s;
+        }
+
+        .service-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            background: #ffffff;
+        }
+
+        .service-card .icon {
+            font-size: 26px;
+            margin-bottom: 18px;
+        }
+
+        .service-card h3 {
+            margin: 0 0 12px;
+            font-size: 19px;
+        }
+
+        .service-card p {
+            color: var(--muted);
+            line-height: 1.55;
+            margin: 0;
+        }
+
+        .departments {
+            padding: 50px 80px;
+        }
+
+        .departments h2 {
+            font-size: 42px;
+            margin-bottom: 26px;
+        }
+
+        .department-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .department-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 800;
+            font-size: 18px;
+            text-decoration: none;
+            color: var(--text);
+            transition: 0.2s;
+        }
+
+        .department-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .document-section {
+            padding: 60px 80px;
+            display: grid;
+            grid-template-columns: 1.7fr 0.8fr;
+            gap: 24px;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+        }
+
+        .panel h2 {
+            font-size: 38px;
+            margin: 0 0 16px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin: 24px 0;
+        }
+
+        .search-row input {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+        }
+
+        .search-row button {
+            width: 54px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .doc-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            transition: 0.2s;
+        }
+
+        .doc-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .tag {
+            display: inline-block;
+            background: #eef2ff;
+            color: var(--primary-dark);
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .doc-card h3 {
+            margin: 0 0 10px;
+            font-size: 17px;
+        }
+
+        .doc-card p {
+            color: var(--muted);
+            line-height: 1.45;
+            font-size: 14px;
+        }
+
+        .doc-open-link {
+            color: var(--primary);
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .doc-open-link:hover {
+            text-decoration: underline;
+        }
+
+        .sidebar-item {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text);
+            transition: 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background: #eef2ff;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .count {
+            background: #eef2ff;
+            border-radius: 999px;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .services-section {
+            padding: 80px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 60px;
+        }
+
+        .service-list {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 18px;
+        }
+
+        .service-list-item {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 12px;
+            text-decoration: none;
+            color: var(--text);
+            display: block;
+            transition: 0.2s;
+        }
+
+        .service-list-item:hover {
+            transform: translateY(-2px);
+            background: #eef2ff;
+            border-color: var(--primary);
+        }
+
+        .service-list-item p {
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .footer {
+            padding: 34px 80px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .footer a {
+            color: var(--text);
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: var(--primary);
+        }
+
+        @media (max-width: 1000px) {
+            .hero,
+            .document-section,
+            .services-section {
+                grid-template-columns: 1fr;
+            }
+
+            .cards,
+            .department-grid,
+            .doc-grid,
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar {
+                padding: 16px 20px;
+                height: auto;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero,
+            .section,
+            .departments,
+            .document-section,
+            .services-section {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .hero h1 {
+                font-size: 44px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="brand">
+            <div class="brand-icon">🎓</div>
+            <div class="brand-text">
+                <strong>College Lasalle</strong>
+                <span>AI Campus Portal</span>
+            </div>
+        </div>
+
+        <div class="nav-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="#departments">Departments</a>
+            <a href="#documents">Documents</a>
+            <a href="#services">Services</a>
+            <a href="/chat">AI Assistant</a>
+            <a href="#" onclick="document.getElementById('agoraWidgetToggle').click()">💬 Chatbot</a>
+        </div>
+
+        <div class="profile">
+            <div class="avatar">
+                {{ user.name[0] if user and user.name else "U" }}
+            </div>
+            <div>
+                <strong>{{ user.name if user else "Guest User" }}</strong>
+                <span>{{ user.role if user else "visitor" }}</span>
+            </div>
+            <a class="logout-btn" href="/logout">Logout</a>
+        </div>
+    </nav>
+
+    <section class="hero" id="home">
+        <div>
+            <div class="eyebrow">AI-Powered Student Portal</div>
+            <h1>One intelligent portal for campus services, documents, and support.</h1>
+            <p>
+                Access academic resources, student services, course documents, appointments,
+                and institutional support from a modern portal powered by an embedded AI assistant.
+            </p>
+
+            <div class="hero-actions">
+                <a href="#documents" class="btn btn-primary">📄 Browse Documents</a>
+                <a href="/appointments" class="btn btn-light">📅 Book Appointment</a>
+                <a href="/chat" class="btn btn-light">🤖 Full AI Assistant</a>
+                <a href="#" class="btn btn-light" onclick="document.getElementById('agoraWidgetToggle').click()">💬 Open Chatbot</a>
+            </div>
+        </div>
+
+        <div class="portal-preview">
+            <div class="preview-header">
+                <strong>Live Portal Overview</strong>
+                <span class="status-pill">Connected</span>
+            </div>
+
+            <div class="preview-grid">
+                <a href="/history" class="preview-card">
+                    <strong>📚 Knowledge Base</strong>
+                    <span>Review previous AI interactions and knowledge-based answers.</span>
+                </a>
+
+                <a href="/chat" class="preview-card">
+                    <strong>🤖 AI Assistant</strong>
+                    <span>Use the full Groq-powered chatbot page connected to the portal.</span>
+                </a>
+
+                <a href="/documents" class="preview-card">
+                    <strong>📄 Documents</strong>
+                    <span>Searchable course outlines, guides, forms, and resources.</span>
+                </a>
+
+                <a href="/appointments" class="preview-card">
+                    <strong>📅 Appointments</strong>
+                    <span>Student support and academic advising request workflow.</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="cards">
+            <a class="service-card" href="/dashboard">
+                <div class="icon">🎓</div>
+                <h3>Role-Based Portal</h3>
+                <p>Students, teachers, and administrators see information according to their role.</p>
+            </a>
+
+            <a class="service-card" href="/documents">
+                <div class="icon">📄</div>
+                <h3>Smart Documents</h3>
+                <p>Course outlines, forms, guides, and institutional documents are searchable.</p>
+            </a>
+
+            <a class="service-card" href="/appointments">
+                <div class="icon">📅</div>
+                <h3>Appointments</h3>
+                <p>Users can request academic support, registrar assistance, and advising help.</p>
+            </a>
+
+            <a class="service-card" href="/chat">
+                <div class="icon">🤖</div>
+                <h3>Embedded Chatbot</h3>
+                <p>The AI assistant stays available across the website without opening a separate page.</p>
+            </a>
+        </div>
+    </section>
+
+    <section class="departments" id="departments">
+        <div class="eyebrow">Academic Areas</div>
+        <h2>Departments and Academic Resources</h2>
+
+        <div class="department-grid">
+            <a href="/documents?q=computer+science" class="department-card">Computer Science <span>›</span></a>
+            <a href="/documents?q=business" class="department-card">Business Administration <span>›</span></a>
+            <a href="/documents?q=design" class="department-card">Design and Digital Arts <span>›</span></a>
+            <a href="/documents?q=marketing" class="department-card">Marketing and Commerce <span>›</span></a>
+            <a href="/documents?q=social+sciences" class="department-card">Social Sciences <span>›</span></a>
+            <a href="/documents?q=general+education" class="department-card">General Education <span>›</span></a>
+        </div>
+    </section>
+
+    <section class="document-section" id="documents">
+        <div class="panel">
+            <div class="eyebrow">Document Center</div>
+            <h2>Accessible Documents and Categories</h2>
+            <p>
+                Documents are organized by category and role. This section represents how students,
+                teachers, and administrators can search institutional resources from one portal.
+            </p>
+
+            <form method="GET" action="/documents" class="search-row">
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Search for a course outline, PDF, guide, or form..."
+                >
+                <button type="submit">⌕</button>
+            </form>
+
+            <strong>26 visible documents</strong>
+
+            <div class="doc-grid" style="margin-top: 18px;">
+                <div class="doc-card">
+                    <span class="tag">ADMINISTRATION</span>
+                    <h3>Student Forms Directory</h3>
+                    <p>Certificates, transcripts, modification requests, and official student documents.</p>
+                    <a href="/documents?q=forms" class="doc-open-link">Open ↗</a>
+                </div>
+
+                <div class="doc-card">
+                    <span class="tag">ACADEMIC</span>
+                    <h3>Course Registration Guide</h3>
+                    <p>Instructions for course registration, enrollment support, and academic planning.</p>
+                    <a href="/documents?q=registration" class="doc-open-link">Open ↗</a>
+                </div>
+
+                <div class="doc-card">
+                    <span class="tag">SUPPORT</span>
+                    <h3>Advisor Booking Guide</h3>
+                    <p>Information about booking academic advisor appointments and student support meetings.</p>
+                    <a href="/documents?q=advisor" class="doc-open-link">Open ↗</a>
+                </div>
+            </div>
+        </div>
+
+        <aside class="panel">
+            <div class="eyebrow">Explore</div>
+            <h3>Available Categories</h3>
+
+            <a href="/documents?q=faculty" class="sidebar-item">
+                <div>
+                    <strong>Faculty Documents</strong><br>
+                    <span>Course outlines and teaching resources.</span>
+                </div>
+                <div class="count">16</div>
+            </a>
+
+            <a href="/documents?q=student+services" class="sidebar-item">
+                <div>
+                    <strong>Student Services</strong><br>
+                    <span>Guides, appointments, and campus support.</span>
+                </div>
+                <div class="count">6</div>
+            </a>
+
+            <a href="/documents?q=administration" class="sidebar-item">
+                <div>
+                    <strong>Administration</strong><br>
+                    <span>Forms and official requests.</span>
+                </div>
+                <div class="count">4</div>
+            </a>
+        </aside>
+    </section>
+
+    <section class="services-section" id="services">
+        <div>
+            <div class="eyebrow">User Services</div>
+            <h2 style="font-size: 34px;">Services Available Through the Chatbot</h2>
+            <p style="font-size: 18px; color: var(--muted); line-height: 1.6;">
+                Appointment requests, document searches, and natural language questions
+                are accessible through the integrated chatbot window.
+            </p>
+
+            <div style="margin-top: 30px;">
+                <span class="tag">Mon-Fri, 8 AM – 6 PM</span>
+                <span class="tag">Campus Services</span>
+            </div>
+        </div>
+
+        <div class="service-list">
+            <a href="/appointments" class="service-list-item">
+                <strong>📅 Book an Appointment</strong>
+                <p>Student Affairs, Registrar Office, IT Services, and Academic Advising.</p>
+            </a>
+
+            <a href="/documents" class="service-list-item">
+                <strong>📄 Search Documents</strong>
+                <p>Course outlines, forms, guides, and institutional resources.</p>
+            </a>
+
+            <a href="/chat" class="service-list-item">
+                <strong>💬 Ask a Question</strong>
+                <p>Receive AI-powered answers with sources and supporting information.</p>
+            </a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <strong>College Lasalle - AI Campus Portal Demo</strong>
+        <a href="#" onclick="document.getElementById('agoraWidgetToggle').click()">💬 Chatbot</a>
+    </footer>
+
+    <script src="{{ url_for('static', filename='widget/widget.js') }}?v=7"></script>
+
+</body>
+</html>

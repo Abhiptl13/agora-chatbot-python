@@ -1,26 +1,380 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2 class="page-title">Document Library</h2>
-<p class="muted">Search documents available for your role: {{ user.role }}</p>
 
-<form method="GET" class="search-form">
-    <input type="text" name="q" value="{{ query }}" placeholder="Search by title, category, or keyword">
-    <button type="submit">Search</button>
-</form>
+<div class="documents-page">
 
-<div class="document-grid">
-    {% for doc in documents %}
-    <div class="doc-card">
-        <h3>{{ doc.title }}</h3>
-        <p><strong>Category:</strong> {{ doc.category }}</p>
-        <p><strong>Type:</strong> {{ doc.type }}</p>
-        <p>{{ doc.summary }}</p>
-        <button>View Document</button>
+    <div class="portal-page-header">
+        <small>Document Center</small>
+        <h1>College Lasalle Document Library</h1>
+        <p>
+            Search and access role-based academic documents, student forms,
+            guides, policies, and institutional resources from one centralized page.
+        </p>
     </div>
-    {% else %}
-    <div class="empty-state">
-        No documents found for your search or role.
+
+    <div class="document-search-card">
+
+        <div>
+            <h2>Search Documents</h2>
+            <p>
+                Use keywords such as course, registration, advisor, form,
+                schedule, exam, department, or student services.
+            </p>
+        </div>
+
+        <form method="GET" action="/documents" class="document-search-form">
+            <input
+                type="text"
+                name="q"
+                placeholder="Search documents..."
+                value="{{ request.args.get('q', '') }}"
+            >
+
+            <button type="submit">
+                Search
+            </button>
+        </form>
+
     </div>
-    {% endfor %}
+
+    <div class="documents-layout">
+
+        <aside class="document-sidebar">
+
+            <h3>Categories</h3>
+
+            <a href="/documents" class="sidebar-link">
+                All Documents
+            </a>
+
+            <a href="/documents?q=academic" class="sidebar-link">
+                Academic Services
+            </a>
+
+            <a href="/documents?q=student" class="sidebar-link">
+                Student Services
+            </a>
+
+            <a href="/documents?q=administration" class="sidebar-link">
+                Administration
+            </a>
+
+            <a href="/documents?q=forms" class="sidebar-link">
+                Forms
+            </a>
+
+            <a href="/documents?q=guide" class="sidebar-link">
+                Guides
+            </a>
+
+        </aside>
+
+        <main class="documents-main">
+
+            <div class="documents-main-header">
+                <h2>Available Documents</h2>
+                <span>{{ documents|length }} document(s)</span>
+            </div>
+
+            <div class="documents-grid">
+
+                {% if documents %}
+
+                    {% for doc in documents %}
+
+                    <div class="document-card">
+
+                        <span class="document-category">
+                            {{ doc.category if doc.category else "General" }}
+                        </span>
+
+                        <h3>
+                            {{ doc.title }}
+                        </h3>
+
+                        <strong class="document-type">
+                            {{ doc.type if doc.type else "Document" }}
+                        </strong>
+
+                        <p>
+                            {{ doc.summary if doc.summary else "No summary available for this document." }}
+                        </p>
+
+                        <a href="#" class="document-button">
+                            View Document
+                        </a>
+
+                    </div>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <div class="empty-state">
+                        <h3>No documents found</h3>
+                        <p>
+                            Try searching with another keyword or return to all documents.
+                        </p>
+
+                        <a href="/documents">
+                            View All Documents
+                        </a>
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </main>
+
+    </div>
+
 </div>
+
+<style>
+
+.documents-page{
+    width:100%;
+    max-width:1400px;
+    margin:0 auto;
+    padding:34px 34px 60px;
+}
+
+.document-search-card{
+    background:white;
+    border:1px solid #dbe3ef;
+    border-radius:24px;
+    padding:28px;
+    margin-bottom:26px;
+    display:grid;
+    grid-template-columns:1fr 1.2fr;
+    gap:24px;
+    align-items:center;
+    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+}
+
+.document-search-card h2{
+    margin:0 0 10px;
+    color:#172033;
+}
+
+.document-search-card p{
+    margin:0;
+    color:#64748b;
+    line-height:1.6;
+}
+
+.document-search-form{
+    display:flex;
+    gap:12px;
+}
+
+.document-search-form input{
+    flex:1;
+    padding:15px 16px;
+    border:1px solid #dbe3ef;
+    border-radius:14px;
+    font-size:16px;
+}
+
+.document-search-form button{
+    border:none;
+    border-radius:14px;
+    padding:0 24px;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:white;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.documents-layout{
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:26px;
+    width:100%;
+}
+
+.document-sidebar{
+    background:white;
+    border:1px solid #dbe3ef;
+    border-radius:22px;
+    padding:24px;
+    height:max-content;
+    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+}
+
+.document-sidebar h3{
+    margin-top:0;
+    margin-bottom:16px;
+    color:#172033;
+}
+
+.sidebar-link{
+    display:block;
+    text-decoration:none;
+    color:#475569;
+    padding:13px 14px;
+    border-radius:12px;
+    font-weight:700;
+    margin-bottom:8px;
+}
+
+.sidebar-link:hover{
+    background:#eef2ff;
+    color:#4f46e5;
+}
+
+.documents-main{
+    width:100%;
+    min-width:0;
+}
+
+.documents-main-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+}
+
+.documents-main-header h2{
+    margin:0;
+    color:#172033;
+}
+
+.documents-main-header span{
+    background:#eef2ff;
+    color:#3730a3;
+    padding:8px 14px;
+    border-radius:999px;
+    font-weight:800;
+    font-size:13px;
+}
+
+.documents-grid{
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:24px;
+    align-items:stretch;
+}
+
+.document-card{
+    background:white;
+    border:1px solid #dbe3ef;
+    border-radius:24px;
+    padding:26px;
+    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+    transition:0.25s;
+}
+
+.document-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 25px 60px rgba(15,23,42,0.12);
+}
+
+.document-category{
+    display:inline-block;
+    background:#eef2ff;
+    color:#3730a3;
+    padding:7px 14px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:900;
+    text-transform:capitalize;
+    margin-bottom:16px;
+}
+
+.document-card h3{
+    margin:0 0 12px;
+    color:#4338ca;
+    font-size:22px;
+}
+
+.document-type{
+    display:block;
+    color:#64748b;
+    margin-bottom:14px;
+}
+
+.document-card p{
+    color:#475569;
+    line-height:1.7;
+    min-height:80px;
+}
+
+.document-button{
+    display:inline-block;
+    margin-top:14px;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:white;
+    text-decoration:none;
+    padding:13px 20px;
+    border-radius:13px;
+    font-weight:800;
+}
+
+.empty-state{
+    grid-column:1 / -1;
+    background:white;
+    border:1px dashed #cbd5e1;
+    border-radius:24px;
+    padding:40px;
+    text-align:center;
+}
+
+.empty-state h3{
+    margin-top:0;
+}
+
+.empty-state p{
+    color:#64748b;
+}
+
+.empty-state a{
+    display:inline-block;
+    margin-top:14px;
+    color:#4f46e5;
+    font-weight:800;
+    text-decoration:none;
+}
+
+@media(max-width:1000px){
+
+    .document-search-card{
+        grid-template-columns:1fr;
+    }
+
+    .documents-layout{
+        grid-template-columns:1fr;
+    }
+
+    .document-sidebar{
+        order:1;
+    }
+
+    .documents-main{
+        order:2;
+    }
+
+}
+
+@media(max-width:700px){
+
+    .documents-page{
+        padding:22px;
+    }
+
+    .document-search-form{
+        flex-direction:column;
+    }
+
+    .document-search-form button{
+        padding:15px;
+    }
+
+}
+
+</style>
+
 {% endblock %}
