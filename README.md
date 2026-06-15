@@ -19,8 +19,6 @@ The project is deployed on Render and can be accessed here:
 
 https://agora-chatbot-python.onrender.com
 
-```
-
 ---
 
 ## Key Features
