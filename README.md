@@ -13,27 +13,11 @@ This project was developed as the **Python-based equivalent version** of the mai
 The platform includes a modern portal interface where users can browse services, documents, departments, appointments, and chatbot support. The embedded chatbot can answer both casual greetings and institutional questions using MongoDB-based knowledge retrieval combined with AI-generated responses.
 
 ---
+## Live Deployment
 
-## Live Demo
+The project is deployed on Render and can be accessed here:
 
-Deployment platform planned:
-
-```text
-Render Free Plan
-```
-
-Live demo link:
-
-```text
-Coming Soon
-```
-
-After deployment, replace the text above with the Render URL.
-
-Example:
-
-```text
-https://agora-chatbot-python.onrender.com
+https://agora-chatbot-python.onrender.com/login
 ```
 
 ---
