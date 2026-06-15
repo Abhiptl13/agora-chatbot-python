@@ -17,7 +17,7 @@ The platform includes a modern portal interface where users can browse services,
 
 The project is deployed on Render and can be accessed here:
 
-https://agora-chatbot-python.onrender.com/login
+https://agora-chatbot-python.onrender.com
 ```
 
 ---
