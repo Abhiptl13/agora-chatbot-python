@@ -1,8 +1,35 @@
+# Environment variables
 .env
-venv/
+.env.local
+.env.production
+
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Flask / logs
 instance/
-.pytest_cache/
-.DS_Store
 *.log
+
+# Uploaded files
+static/uploads/
+uploads/
+
+# Database / local files
+*.db
+*.sqlite3
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

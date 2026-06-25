@@ -1,249 +1,492 @@
 {% extends "base.html" %}
 
+{% block title %}College Lasalle | Dashboard{% endblock %}
+
 {% block content %}
 
+{% set role = user.role|lower if user and user.role else "student" %}
+
 <div class="portal-page-header">
-    <small>User Dashboard</small>
-    <h1>Welcome, {{ user.name }}</h1>
+    <small>
+        {% if role in ["admin", "administrator"] %}
+            Administrator Dashboard
+        {% elif role == "teacher" %}
+            Teacher Dashboard
+        {% else %}
+            Student Dashboard
+        {% endif %}
+    </small>
+
+    <h1>
+        Welcome, {{ user.name if user else "User" }}
+    </h1>
+
     <p>
-        Access all College Lasalle services from a centralized dashboard.
-        Navigate to the AI Assistant, Document Center, Appointment Services,
-        Conversation History, and Portal Website.
+        {% if role in ["admin", "administrator"] %}
+            Manage appointments, documents, AI activity, and administrative workflows from one clean dashboard.
+        {% elif role == "teacher" %}
+            Upload learning resources, search documents, use the AI assistant, and access academic support tools.
+        {% else %}
+            Search documents, book appointments, use the AI assistant, and review your previous conversations.
+        {% endif %}
     </p>
 </div>
 
-<div class="dashboard-overview">
+{% if role in ["admin", "administrator"] %}
 
-    <div class="overview-card">
-        <h3>{{ user.role }}</h3>
-        <span>Current Role</span>
-    </div>
+<section class="dashboard-hero admin-hero">
 
-    <div class="overview-card">
-        <h3>{{ user.department }}</h3>
-        <span>Department</span>
-    </div>
-
-    <div class="overview-card">
-        <h3>Online</h3>
-        <span>System Status</span>
-    </div>
-
-    <div class="overview-card">
-        <h3>MongoDB</h3>
-        <span>Connected Database</span>
-    </div>
-
-</div>
-
-<div class="dashboard-grid">
-
-    <a class="dashboard-card primary-card" href="/demo-site">
-
-        <div class="card-icon"></div>
-
-        <h3>AI Campus Portal</h3>
-
+    <div>
+        <span class="role-chip">Administrator Access</span>
+        <h2>Admin Control Center</h2>
         <p>
-            Open the main College Lasalle portal with embedded AI assistant,
-            services, departments, and institutional information.
+            Review appointment requests, monitor portal activity, manage document access,
+            and test the AI-powered campus support workflow.
         </p>
+    </div>
 
-        <span class="card-action">
-            Open Portal →
-        </span>
+    <div class="hero-actions-box">
+        <a href="/admin/appointments" class="primary-action">
+            Manage Appointments
+        </a>
+        <a href="/documents" class="secondary-action">
+            Open Documents
+        </a>
+    </div>
 
+</section>
+
+<section class="dashboard-stats-grid">
+
+    <div class="dashboard-stat-card">
+        <span>Total Documents</span>
+        <strong>{{ stats.documents }}</strong>
+        <p>Documents available through role-based access.</p>
+    </div>
+
+    <div class="dashboard-stat-card">
+        <span>Your Conversations</span>
+        <strong>{{ stats.conversations }}</strong>
+        <p>Your saved AI assistant interactions.</p>
+    </div>
+
+    <div class="dashboard-stat-card">
+        <span>Your Appointments</span>
+        <strong>{{ stats.appointments }}</strong>
+        <p>Appointment requests created by you.</p>
+    </div>
+
+    {% if admin_stats %}
+    <div class="dashboard-stat-card highlight-card">
+        <span>Pending Requests</span>
+        <strong>{{ admin_stats.pending_appointments }}</strong>
+        <p>Appointment requests waiting for approval.</p>
+    </div>
+    {% endif %}
+
+</section>
+
+<section class="dashboard-actions-grid">
+
+    <a href="/admin/appointments" class="dashboard-action-card">
+        <div class="action-icon">🛠️</div>
+        <h3>Admin Appointments</h3>
+        <p>Approve, reject, and review student appointment requests.</p>
     </a>
 
-    <a class="dashboard-card" href="/chat">
-
-        <div class="card-icon"></div>
-
-        <h3>AI Assistant</h3>
-
-        <p>
-            Ask questions about services, documents, appointments,
-            departments, academic resources, and institutional support.
-        </p>
-
-        <span class="card-action">
-            Start Conversation →
-        </span>
-
-    </a>
-
-    <a class="dashboard-card" href="/documents">
-
-        <div class="card-icon"></div>
-
+    <a href="/documents" class="dashboard-action-card">
+        <div class="action-icon">📄</div>
         <h3>Document Center</h3>
-
-        <p>
-            Search role-based documents, guides, forms,
-            procedures, academic resources, and support materials.
-        </p>
-
-        <span class="card-action">
-            View Documents →
-        </span>
-
+        <p>Upload PDFs, preview files, download resources, and test AI document search.</p>
     </a>
 
-    <a class="dashboard-card" href="/appointments">
-
-        <div class="card-icon"></div>
-
-        <h3>Appointment Services</h3>
-
-        <p>
-            Schedule meetings with advisors, administrators,
-            support staff, and institutional representatives.
-        </p>
-
-        <span class="card-action">
-            Book Appointment →
-        </span>
-
+    <a href="/chat" class="dashboard-action-card">
+        <div class="action-icon">🤖</div>
+        <h3>AI Assistant</h3>
+        <p>Ask questions using portal data, uploaded PDFs, and chatbot memory.</p>
     </a>
 
-    <a class="dashboard-card" href="/history">
-
-        <div class="card-icon"></div>
-
+    <a href="/history" class="dashboard-action-card">
+        <div class="action-icon">📚</div>
         <h3>Conversation History</h3>
-
-        <p>
-            Review previous AI conversations, answers,
-            sources, and interaction history.
-        </p>
-
-        <span class="card-action">
-            View History →
-        </span>
-
+        <p>Review previous chatbot questions, answers, and sources.</p>
     </a>
 
-    <div class="dashboard-card stats-card">
+</section>
 
-        <div class="card-icon"></div>
+{% elif role == "teacher" %}
 
-        <h3>Platform Features</h3>
+<section class="dashboard-hero teacher-hero">
 
-        <ul>
-            <li>MongoDB Atlas Integration</li>
-            <li>Groq AI Integration</li>
-            <li>Role-Based Access</li>
-            <li>Document Search</li>
-            <li>Appointment Requests</li>
-            <li>Conversation Tracking</li>
-        </ul>
-
+    <div>
+        <span class="role-chip">Teacher Access</span>
+        <h2>Teacher Workspace</h2>
+        <p>
+            Upload PDF learning resources, assign them to students or teachers,
+            search academic documents, and use the AI assistant for fast support.
+        </p>
     </div>
 
-</div>
+    <div class="hero-actions-box">
+        <a href="/documents" class="primary-action">
+            Upload PDF
+        </a>
+        <a href="/chat" class="secondary-action">
+            Ask AI
+        </a>
+    </div>
+
+</section>
+
+<section class="dashboard-stats-grid">
+
+    <div class="dashboard-stat-card">
+        <span>Available Documents</span>
+        <strong>{{ stats.documents }}</strong>
+        <p>Teacher-accessible academic resources and uploaded PDFs.</p>
+    </div>
+
+    <div class="dashboard-stat-card">
+        <span>AI Conversations</span>
+        <strong>{{ stats.conversations }}</strong>
+        <p>Your saved AI assistant questions and responses.</p>
+    </div>
+
+    <div class="dashboard-stat-card">
+        <span>Appointment Requests</span>
+        <strong>{{ stats.appointments }}</strong>
+        <p>Your submitted support or consultation requests.</p>
+    </div>
+
+</section>
+
+<section class="dashboard-actions-grid">
+
+    <a href="/documents" class="dashboard-action-card">
+        <div class="action-icon">📤</div>
+        <h3>Upload Documents</h3>
+        <p>Upload PDF files for students or teachers with AI-searchable content.</p>
+    </a>
+
+    <a href="/documents?q=academic" class="dashboard-action-card">
+        <div class="action-icon">📘</div>
+        <h3>Academic Resources</h3>
+        <p>Search course guides, project plans, and teaching materials.</p>
+    </a>
+
+    <a href="/chat" class="dashboard-action-card">
+        <div class="action-icon">🤖</div>
+        <h3>AI Assistant</h3>
+        <p>Ask questions about uploaded documents, services, and portal support.</p>
+    </a>
+
+    <a href="/appointments" class="dashboard-action-card">
+        <div class="action-icon">📅</div>
+        <h3>Request Support</h3>
+        <p>Submit appointment requests for academic or administrative help.</p>
+    </a>
+
+</section>
+
+{% else %}
+
+<section class="dashboard-hero student-hero">
+
+    <div>
+        <span class="role-chip">Student Access</span>
+        <h2>Student Portal</h2>
+        <p>
+            Find student documents, ask the AI assistant questions, book appointments,
+            and review your saved chat history.
+        </p>
+    </div>
+
+    <div class="hero-actions-box">
+        <a href="/chat" class="primary-action">
+            Ask AI
+        </a>
+        <a href="/appointments" class="secondary-action">
+            Book Appointment
+        </a>
+    </div>
+
+</section>
+
+<section class="dashboard-stats-grid">
+
+    <div class="dashboard-stat-card">
+        <span>Available Documents</span>
+        <strong>{{ stats.documents }}</strong>
+        <p>Student-accessible documents and resources.</p>
+    </div>
+
+    <div class="dashboard-stat-card">
+        <span>AI Conversations</span>
+        <strong>{{ stats.conversations }}</strong>
+        <p>Your saved AI assistant conversations.</p>
+    </div>
+
+    <div class="dashboard-stat-card">
+        <span>Appointment Requests</span>
+        <strong>{{ stats.appointments }}</strong>
+        <p>Your submitted appointment requests.</p>
+    </div>
+
+</section>
+
+<section class="dashboard-actions-grid">
+
+    <a href="/documents" class="dashboard-action-card">
+        <div class="action-icon">📄</div>
+        <h3>Search Documents</h3>
+        <p>Find guides, forms, course resources, and uploaded PDF documents.</p>
+    </a>
+
+    <a href="/appointments" class="dashboard-action-card">
+        <div class="action-icon">📅</div>
+        <h3>Book Appointment</h3>
+        <p>Request academic advising, administrative help, or student support.</p>
+    </a>
+
+    <a href="/chat" class="dashboard-action-card">
+        <div class="action-icon">🤖</div>
+        <h3>AI Assistant</h3>
+        <p>Ask questions about services, documents, appointments, or campus support.</p>
+    </a>
+
+    <a href="/history" class="dashboard-action-card">
+        <div class="action-icon">📚</div>
+        <h3>Chat History</h3>
+        <p>Review your previous chatbot questions, answers, and sources.</p>
+    </a>
+
+</section>
+
+{% endif %}
 
 <style>
 
-.dashboard-overview{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:20px;
-    margin-bottom:30px;
+.dashboard-hero {
+    border-radius: 26px;
+    padding: 30px;
+    margin-bottom: 28px;
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    align-items: center;
+    border: 1px solid #dbe3ef;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.05);
 }
 
-.overview-card{
-    background:white;
-    border:1px solid #dbe3ef;
-    border-radius:20px;
-    padding:24px;
-    text-align:center;
-    box-shadow:0 18px 45px rgba(15,23,42,0.05);
-}
-
-.overview-card h3{
-    margin:0;
-    color:#4f46e5;
-    font-size:28px;
-    text-transform:capitalize;
-}
-
-.overview-card span{
-    color:#64748b;
-}
-
-.dashboard-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-    gap:24px;
-}
-
-.dashboard-card{
-    background:white;
-    border:1px solid #dbe3ef;
-    border-radius:24px;
-    padding:26px;
-    text-decoration:none;
-    color:#172033;
-    transition:0.25s;
-    box-shadow:0 18px 45px rgba(15,23,42,0.05);
-}
-
-.dashboard-card:hover{
-    transform:translateY(-5px);
-    box-shadow:0 25px 60px rgba(15,23,42,0.12);
-}
-
-.primary-card{
+.admin-hero {
     background:
-        radial-gradient(circle at top right,
-        rgba(14,165,233,0.15),
-        transparent 35%),
-        linear-gradient(135deg,#eef2ff,#ffffff);
+        radial-gradient(circle at top right, rgba(79,70,229,0.14), transparent 34%),
+        linear-gradient(135deg, #ffffff, #eef2ff);
 }
 
-.card-icon{
-    font-size:40px;
-    margin-bottom:16px;
+.teacher-hero {
+    background:
+        radial-gradient(circle at top right, rgba(14,165,233,0.14), transparent 34%),
+        linear-gradient(135deg, #ffffff, #ecfeff);
 }
 
-.dashboard-card h3{
-    margin-top:0;
-    margin-bottom:12px;
-    color:#4338ca;
+.student-hero {
+    background:
+        radial-gradient(circle at top right, rgba(16,185,129,0.12), transparent 34%),
+        linear-gradient(135deg, #ffffff, #f0fdf4);
 }
 
-.dashboard-card p{
-    line-height:1.7;
-    color:#64748b;
+.role-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    color: #3730a3;
+    border: 1px solid #dfe4ff;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
 }
 
-.card-action{
-    display:inline-block;
-    margin-top:16px;
-    font-weight:800;
-    color:#4f46e5;
+.dashboard-hero h2 {
+    margin: 0 0 10px;
+    font-size: 30px;
+    letter-spacing: -0.04em;
 }
 
-.stats-card ul{
-    padding-left:20px;
-    color:#475569;
-    line-height:1.9;
+.dashboard-hero p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.6;
+    max-width: 760px;
 }
 
-@media(max-width:1000px){
+.hero-actions-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    flex-shrink: 0;
+}
 
-    .dashboard-overview{
-        grid-template-columns:1fr 1fr;
+.primary-action,
+.secondary-action {
+    text-decoration: none;
+    padding: 13px 16px;
+    border-radius: 14px;
+    font-weight: 900;
+    transition: 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.primary-action {
+    background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+    color: #ffffff;
+    box-shadow: 0 14px 28px rgba(79,70,229,0.18);
+}
+
+.secondary-action {
+    background: #ffffff;
+    color: #3730a3;
+    border: 1px solid #dfe4ff;
+}
+
+.primary-action:hover,
+.secondary-action:hover {
+    transform: translateY(-2px);
+}
+
+.dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 28px;
+}
+
+.dashboard-stat-card {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+    transition: 0.2s ease;
+}
+
+.dashboard-stat-card:hover {
+    transform: translateY(-3px);
+    border-color: #4f46e5;
+}
+
+.dashboard-stat-card span {
+    color: #64748b;
+    font-weight: 900;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.dashboard-stat-card strong {
+    display: block;
+    margin: 12px 0 8px;
+    font-size: 40px;
+    color: #172033;
+    letter-spacing: -0.05em;
+}
+
+.dashboard-stat-card p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.highlight-card {
+    border-color: #facc15;
+    background: #fffbeb;
+}
+
+.dashboard-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+}
+
+.dashboard-action-card {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 22px;
+    padding: 24px;
+    text-decoration: none;
+    color: #172033;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+    transition: 0.2s ease;
+}
+
+.dashboard-action-card:hover {
+    transform: translateY(-4px);
+    border-color: #4f46e5;
+    background: #f8fafc;
+}
+
+.action-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    background: #eef2ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    margin-bottom: 18px;
+}
+
+.dashboard-action-card h3 {
+    margin: 0 0 10px;
+    font-size: 20px;
+}
+
+.dashboard-action-card p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.5;
+    font-size: 15px;
+}
+
+@media(max-width:1200px) {
+    .dashboard-stats-grid,
+    .dashboard-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media(max-width:760px) {
+    .dashboard-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 24px;
     }
 
-}
-
-@media(max-width:700px){
-
-    .dashboard-overview{
-        grid-template-columns:1fr;
+    .hero-actions-box {
+        width: 100%;
     }
 
+    .primary-action,
+    .secondary-action {
+        width: 100%;
+    }
+
+    .dashboard-stats-grid,
+    .dashboard-actions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-hero h2 {
+        font-size: 26px;
+    }
 }
 
 </style>

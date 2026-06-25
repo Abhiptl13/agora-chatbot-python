@@ -1,14 +1,16 @@
 {% extends "base.html" %}
 
+{% block title %}College Lasalle | AI Assistant{% endblock %}
+
 {% block content %}
 
 <div class="portal-page-header">
     <small>AI Assistant</small>
-    <h1>Agora Assistant Chat</h1>
+    <h1>Agora Assistant</h1>
     <p>
-        Ask questions about student services, documents, appointments,
-        departments, academic support, administration, or technical support.
-        Your conversation will be saved in MongoDB history.
+        Ask questions about College Lasalle services, documents, appointments,
+        uploaded PDFs, departments, or portal support. Answers can include source
+        names and document links when available.
     </p>
 </div>
 
@@ -18,10 +20,10 @@
 
         <div class="assistant-header">
             <div>
+                <span class="assistant-chip">Groq AI · MongoDB · PDF Search</span>
                 <h2>Chat with Agora Assistant</h2>
                 <p>
-                    Connected to MongoDB knowledge base, documents, portal services,
-                    departments, and Groq AI.
+                    Connected to portal documents, chatbot memory, services, and knowledge records.
                 </p>
             </div>
 
@@ -29,10 +31,18 @@
         </div>
 
         <div class="quick-prompts">
-            <button onclick="quickAsk('What services are available?')">Services</button>
-            <button onclick="quickAsk('How can I book an appointment?')">Appointments</button>
-            <button onclick="quickAsk('What documents can I search?')">Documents</button>
-            <button onclick="quickAsk('What departments are available?')">Departments</button>
+            <button type="button" onclick="quickAsk('What documents are available?')">
+                Documents
+            </button>
+            <button type="button" onclick="quickAsk('How can I book an appointment?')">
+                Appointments
+            </button>
+            <button type="button" onclick="quickAsk('What can you help me with?')">
+                Help
+            </button>
+            <button type="button" onclick="quickAsk('Search uploaded PDFs for project plan information')">
+                PDF Search
+            </button>
         </div>
 
         <div id="chatBox" class="chat-box-modern">
@@ -40,8 +50,8 @@
             <div class="message bot">
                 <strong>Agora Assistant</strong>
                 <p>
-                    Hello! I can help you navigate the portal, find documents,
-                    understand services, book appointments, and answer institutional questions.
+                    Hello! I can help you search documents, understand services,
+                    book appointments, and answer questions using College Lasalle portal data.
                 </p>
             </div>
 
@@ -53,12 +63,12 @@
             <input
                 id="question"
                 type="text"
-                placeholder="Type your question and press Enter..."
+                placeholder="Ask about documents, appointments, services, or uploaded PDFs..."
                 autocomplete="off"
             >
 
-            <button id="sendBtn" onclick="sendMessage()">
-                ➤
+            <button id="sendBtn" type="button" onclick="sendMessage()" aria-label="Send message">
+                ➜
             </button>
         </div>
 
@@ -67,32 +77,64 @@
     <aside class="assistant-sidebar">
 
         <div class="side-card">
-            <h3>What can I ask?</h3>
-            <ul>
-                <li>How can I book an appointment?</li>
-                <li>What documents are available?</li>
-                <li>Where can teachers update attendance?</li>
-                <li>Where can admins see reports?</li>
-                <li>What departments are available?</li>
-            </ul>
+            <h3>Suggested Questions</h3>
+
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('What is the Week 1 objective in the uploaded project plan?')">
+                Week 1 project objective
+            </button>
+
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('What are the deliverables at the end of Week 6?')">
+                Week 6 deliverables
+            </button>
+
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('How can I book an appointment?')">
+                Book appointment
+            </button>
+
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('What documents can I search?')">
+                Search documents
+            </button>
         </div>
 
-        <div class="side-card">
+        <div class="side-card source-card">
             <h3>Connected Sources</h3>
-            <p>Knowledge Base</p>
-            <p>Document Center</p>
-            <p>Portal Services</p>
-            <p>Academic Departments</p>
-            <p>Website Content</p>
+
+            <div class="source-item">
+                <span>📄</span>
+                <div>
+                    <strong>PDF Documents</strong>
+                    <p>Uploaded files with searchable text.</p>
+                </div>
+            </div>
+
+            <div class="source-item">
+                <span>🧠</span>
+                <div>
+                    <strong>Knowledge Base</strong>
+                    <p>Institutional chatbot records.</p>
+                </div>
+            </div>
+
+            <div class="source-item">
+                <span>💬</span>
+                <div>
+                    <strong>Chat Memory</strong>
+                    <p>Recent conversation context.</p>
+                </div>
+            </div>
         </div>
 
         <div class="side-card highlight-card">
-            <h3>Need a page?</h3>
+            <h3>Need another page?</h3>
             <p>
-                The assistant can guide you to the correct section or page
-                based on your question.
+                Go directly to documents, appointments, or your history.
             </p>
-            <a href="/demo-site">Return to Portal</a>
+
+            <div class="side-links">
+                <a href="/documents">Documents</a>
+                <a href="/appointments">Appointments</a>
+                <a href="/history">History</a>
+            </div>
         </div>
 
     </aside>
@@ -101,36 +143,53 @@
 
 <script>
 function escapeHTML(text) {
-    return String(text)
+    return String(text || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
 }
 
+function formatMessageText(text) {
+    let safeText = escapeHTML(text);
+
+    safeText = safeText.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+
+    safeText = safeText.replace(
+        /(https?:\/\/[^\s<]+|\/documents\/preview\/[^\s<]+|\/documents\/download\/[^\s<]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+
+    return safeText;
+}
+
 function getActionLinks(source, answer, question) {
-    const text = `${source} ${answer} ${question}`.toLowerCase();
+    const text = `${source || ""} ${answer || ""} ${question || ""}`.toLowerCase();
     const actions = [];
 
     if (text.includes("appointment") || text.includes("advisor") || text.includes("book")) {
-        actions.push({ label: "Open Appointment Page", url: "/appointments" });
-        actions.push({ label: "View Services Section", url: "/demo-site#services" });
+        actions.push({ label: "Open Appointments", url: "/appointments" });
     }
 
-    if (text.includes("document") || text.includes("course") || text.includes("form") || text.includes("guide")) {
-        actions.push({ label: "Open Document Center", url: "/documents" });
-        actions.push({ label: "View Documents Section", url: "/demo-site#documents" });
-    }
-
-    if (text.includes("department") || text.includes("computer science") || text.includes("business") || text.includes("design")) {
-        actions.push({ label: "View Departments Section", url: "/demo-site#departments" });
-    }
-
-    if (text.includes("service") || text.includes("support") || text.includes("registrar")) {
-        actions.push({ label: "View Services Section", url: "/demo-site#services" });
+    if (
+        text.includes("document") ||
+        text.includes("pdf") ||
+        text.includes("course") ||
+        text.includes("form") ||
+        text.includes("guide") ||
+        text.includes("project")
+    ) {
+        actions.push({ label: "Open Documents", url: "/documents" });
     }
 
     if (text.includes("history") || text.includes("conversation")) {
-        actions.push({ label: "Open Conversation History", url: "/history" });
+        actions.push({ label: "Open History", url: "/history" });
+    }
+
+    if (text.includes("dashboard") || text.includes("portal")) {
+        actions.push({ label: "Open Dashboard", url: "/dashboard" });
     }
 
     const unique = [];
@@ -166,10 +225,14 @@ function addMessage(text, sender, source = null, actions = []) {
         content += `<strong>You</strong>`;
     }
 
-    content += `<p>${escapeHTML(text)}</p>`;
+    content += `<p>${formatMessageText(text)}</p>`;
 
     if (source) {
-        content += `<small><strong>Source:</strong> ${escapeHTML(source)}</small>`;
+        content += `
+            <small class="source-line">
+                <strong>Source:</strong> ${escapeHTML(source)}
+            </small>
+        `;
     }
 
     if (actions.length > 0) {
@@ -177,7 +240,7 @@ function addMessage(text, sender, source = null, actions = []) {
 
         actions.forEach(action => {
             content += `
-                <button class="action-link" data-url="${escapeHTML(action.url)}">
+                <button class="action-link" type="button" data-url="${escapeHTML(action.url)}">
                     ${escapeHTML(action.label)}
                 </button>
             `;
@@ -203,11 +266,24 @@ function quickAsk(question) {
     sendMessage();
 }
 
+function setLoading(isLoading) {
+    const loading = document.getElementById("loading");
+    const sendBtn = document.getElementById("sendBtn");
+
+    if (isLoading) {
+        loading.innerText = "Agora Assistant is typing...";
+        sendBtn.disabled = true;
+        sendBtn.innerText = "…";
+    } else {
+        loading.innerText = "";
+        sendBtn.disabled = false;
+        sendBtn.innerText = "➜";
+    }
+}
+
 function sendMessage() {
     const input = document.getElementById("question");
-    const sendBtn = document.getElementById("sendBtn");
     const question = input.value.trim();
-    const loading = document.getElementById("loading");
 
     if (question === "") {
         return;
@@ -216,8 +292,7 @@ function sendMessage() {
     addMessage(question, "user");
 
     input.value = "";
-    loading.innerText = "Agora Assistant is typing...";
-    sendBtn.disabled = true;
+    setLoading(true);
 
     fetch("/api/chat/message", {
         method: "POST",
@@ -226,8 +301,7 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
-        loading.innerText = "";
-        sendBtn.disabled = false;
+        setLoading(false);
 
         if (data.error) {
             addMessage(data.error, "bot", "Error");
@@ -249,238 +323,378 @@ function sendMessage() {
         input.focus();
     })
     .catch(() => {
-        loading.innerText = "";
-        sendBtn.disabled = false;
-        addMessage("Error: Could not process your message.", "bot", "Connection Error");
+        setLoading(false);
+        addMessage(
+            "Error: I could not process your message right now. Please try again.",
+            "bot",
+            "Connection Error"
+        );
         input.focus();
     });
 }
 
-document.getElementById("question").addEventListener("keydown", function(event) {
-    if (event.key === "Enter") {
-        event.preventDefault();
-        sendMessage();
-    }
+document.addEventListener("DOMContentLoaded", function () {
+    const questionInput = document.getElementById("question");
+
+    questionInput.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
+
+    questionInput.focus();
 });
 </script>
 
 <style>
 
-.assistant-layout{
-    display:grid;
-    grid-template-columns:2.3fr 0.9fr;
-    gap:28px;
+.assistant-layout {
+    display: grid;
+    grid-template-columns: 2.2fr 0.9fr;
+    gap: 28px;
 }
 
 .assistant-card,
-.side-card{
-    background:white;
-    border:1px solid #dbe3ef;
-    border-radius:22px;
-    padding:24px;
-    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+.side-card {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.05);
 }
 
-.assistant-header{
-    display:flex;
-    justify-content:space-between;
-    gap:20px;
-    align-items:flex-start;
-    margin-bottom:18px;
+.assistant-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 18px;
 }
 
-.assistant-header h2{
-    margin:0 0 8px;
+.assistant-chip {
+    display: inline-flex;
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #dfe4ff;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 12px;
 }
 
-.assistant-header p{
-    margin:0;
-    color:#64748b;
-    line-height:1.6;
+.assistant-header h2 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    letter-spacing: -0.04em;
 }
 
-.status-badge{
-    background:#dcfce7;
-    color:#166534;
-    padding:8px 13px;
-    border-radius:999px;
-    font-weight:900;
-    font-size:12px;
+.assistant-header p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.6;
 }
 
-.quick-prompts{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-bottom:18px;
+.status-badge {
+    background: #dcfce7;
+    color: #166534;
+    padding: 8px 13px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
 }
 
-.quick-prompts button{
-    border:1px solid #dbe3ef;
-    background:#eef2ff;
-    color:#3730a3;
-    border-radius:999px;
-    padding:9px 13px;
-    font-weight:800;
-    cursor:pointer;
+.quick-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
 }
 
-.chat-box-modern{
-    height:520px;
-    overflow-y:auto;
-    background:#f8fafc;
-    border:1px solid #dbe3ef;
-    border-radius:20px;
-    padding:18px;
-    display:flex;
-    flex-direction:column;
-    gap:14px;
+.quick-prompts button {
+    border: 1px solid #dbe3ef;
+    background: #f8fafc;
+    color: #3730a3;
+    border-radius: 999px;
+    padding: 9px 13px;
+    font-weight: 900;
+    cursor: pointer;
+    margin-top: 0;
 }
 
-.message{
-    max-width:78%;
-    padding:15px;
-    border-radius:18px;
-    line-height:1.6;
+.quick-prompts button:hover {
+    background: #eef2ff;
+    transform: translateY(-1px);
 }
 
-.message strong{
-    display:block;
-    margin-bottom:6px;
+.chat-box-modern {
+    height: 540px;
+    overflow-y: auto;
+    background:
+        radial-gradient(circle at top right, rgba(14,165,233,0.08), transparent 32%),
+        #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 22px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
 }
 
-.message p{
-    margin:0;
-    white-space:pre-line;
+.chat-box-modern::-webkit-scrollbar {
+    width: 8px;
 }
 
-.message small{
-    display:block;
-    margin-top:8px;
-    color:#64748b;
+.chat-box-modern::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
 }
 
-.message.bot{
-    align-self:flex-start;
-    background:white;
-    border:1px solid #dbe3ef;
-    border-bottom-left-radius:5px;
+.message {
+    max-width: 78%;
+    padding: 15px 16px;
+    border-radius: 18px;
+    line-height: 1.6;
 }
 
-.message.user{
-    align-self:flex-end;
-    background:linear-gradient(135deg,#4f46e5,#7c3aed);
-    color:white;
-    border-bottom-right-radius:5px;
+.message strong {
+    display: block;
+    margin-bottom: 6px;
 }
 
-.message.user small{
-    color:white;
+.message p {
+    margin: 0;
+    white-space: pre-line;
 }
 
-.typing-text{
-    min-height:22px;
-    color:#64748b;
-    margin:12px 4px;
+.message a {
+    color: #4f46e5;
+    font-weight: 900;
+    word-break: break-word;
 }
 
-.chat-input-modern{
-    display:flex;
-    gap:12px;
-    margin-top:12px;
+.message small {
+    display: block;
+    margin-top: 8px;
+    color: #64748b;
 }
 
-.chat-input-modern input{
-    flex:1;
-    border:1px solid #dbe3ef;
-    border-radius:14px;
-    padding:15px;
-    font-size:15px;
-    outline:none;
+.message.bot {
+    align-self: flex-start;
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-bottom-left-radius: 6px;
 }
 
-.chat-input-modern input:focus{
-    border-color:#4f46e5;
-    box-shadow:0 0 0 3px rgba(79,70,229,0.12);
+.message.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    color: #ffffff;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 14px 28px rgba(79,70,229,0.18);
 }
 
-.chat-input-modern button{
-    width:54px;
-    border:none;
-    border-radius:14px;
-    background:linear-gradient(135deg,#4f46e5,#7c3aed);
-    color:white;
-    font-size:20px;
-    cursor:pointer;
+.message.user a,
+.message.user small {
+    color: #ffffff;
 }
 
-.assistant-sidebar{
-    display:flex;
-    flex-direction:column;
-    gap:20px;
+.source-line {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    padding: 7px 9px;
+    border-radius: 10px;
 }
 
-.side-card h3{
-    margin-top:0;
+.typing-text {
+    min-height: 22px;
+    color: #64748b;
+    margin: 12px 4px;
+    font-weight: 800;
 }
 
-.side-card ul{
-    padding-left:20px;
-    color:#475569;
-    line-height:1.8;
+.chat-input-modern {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
 }
 
-.side-card p{
-    color:#64748b;
-    line-height:1.5;
+.chat-input-modern input {
+    flex: 1;
+    border: 1px solid #dbe3ef;
+    border-radius: 16px;
+    padding: 15px;
+    font-size: 15px;
+    outline: none;
+    margin-top: 0;
 }
 
-.highlight-card{
-    background:linear-gradient(135deg,#eef2ff,#ffffff);
+.chat-input-modern input:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(79,70,229,0.12);
 }
 
-.highlight-card a{
-    display:inline-block;
-    background:#4f46e5;
-    color:white;
-    padding:11px 14px;
-    border-radius:12px;
-    text-decoration:none;
-    font-weight:800;
+.chat-input-modern button {
+    width: 56px;
+    min-width: 56px;
+    height: 50px;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    color: #ffffff;
+    font-size: 20px;
+    cursor: pointer;
+    margin-top: 0;
 }
 
-.action-list{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    margin-top:12px;
+.chat-input-modern button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
-.action-link{
-    border:none;
-    background:#eef2ff;
-    color:#3730a3;
-    border-radius:10px;
-    padding:9px 11px;
-    font-weight:800;
-    cursor:pointer;
-    text-align:left;
+.assistant-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.action-link:hover{
-    background:#dbeafe;
+.side-card h3 {
+    margin: 0 0 14px;
+    font-size: 20px;
 }
 
-@media(max-width:1000px){
+.side-card p {
+    color: #64748b;
+    line-height: 1.5;
+}
 
-    .assistant-layout{
-        grid-template-columns:1fr;
+.sidebar-prompt {
+    width: 100%;
+    border: 1px solid #dbe3ef;
+    background: #f8fafc;
+    color: #172033;
+    border-radius: 14px;
+    padding: 11px 12px;
+    font-weight: 900;
+    cursor: pointer;
+    text-align: left;
+    margin-top: 8px;
+}
+
+.sidebar-prompt:hover {
+    background: #eef2ff;
+    color: #3730a3;
+}
+
+.source-card {
+    background: linear-gradient(135deg,#ffffff,#f8fafc);
+}
+
+.source-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.source-item:last-child {
+    border-bottom: none;
+}
+
+.source-item span {
+    font-size: 22px;
+}
+
+.source-item strong {
+    display: block;
+    margin-bottom: 3px;
+}
+
+.source-item p {
+    margin: 0;
+    font-size: 13px;
+}
+
+.highlight-card {
+    background:
+        radial-gradient(circle at top right, rgba(79,70,229,0.10), transparent 34%),
+        linear-gradient(135deg,#eef2ff,#ffffff);
+}
+
+.side-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.side-links a {
+    background: #4f46e5;
+    color: #ffffff;
+    padding: 10px 12px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 900;
+    font-size: 13px;
+}
+
+.action-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.action-link {
+    border: none;
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-weight: 900;
+    cursor: pointer;
+    text-align: left;
+    margin-top: 0;
+}
+
+.action-link:hover {
+    background: #dbeafe;
+    transform: translateY(-1px);
+}
+
+@media(max-width:1050px) {
+    .assistant-layout {
+        grid-template-columns: 1fr;
     }
 
-    .message{
-        max-width:92%;
+    .message {
+        max-width: 92%;
+    }
+}
+
+@media(max-width:650px) {
+    .assistant-header {
+        flex-direction: column;
     }
 
+    .chat-box-modern {
+        height: 460px;
+    }
+
+    .chat-input-modern {
+        align-items: stretch;
+    }
+
+    .message {
+        max-width: 96%;
+    }
+
+    .quick-prompts button {
+        flex: 1;
+    }
 }
 
 </style>

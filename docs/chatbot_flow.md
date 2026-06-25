@@ -10,7 +10,7 @@ The current chatbot flow is more advanced than the earlier MVP version. Instead 
 
 ## Purpose
 
-The purpose of the chatbot is to help users access College Agora-style information quickly through natural language conversation.
+The purpose of the chatbot is to help users access College Lasalle-style information quickly through natural language conversation.
 
 The chatbot can assist with:
 

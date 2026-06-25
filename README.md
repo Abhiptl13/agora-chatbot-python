@@ -1,6 +1,6 @@
 # Agora Assistant Chatbot – Python Intelligent Campus Assistant
 
-A Python-based Flask web application that provides an intelligent AI-powered assistant for a College Agora-style intranet portal. The system supports authentication, role-based access, MongoDB Atlas cloud storage, Groq AI response generation, document search, appointment booking, conversation history, and an embedded chatbot widget inside a modern campus portal website.
+A Python-based Flask web application that provides an intelligent AI-powered assistant for a College Lasalle-style intranet portal. The system supports authentication, role-based access, MongoDB Atlas cloud storage, Groq AI response generation, document search, appointment booking, conversation history, and an embedded chatbot widget inside a modern campus portal website.
 
 ---
 
@@ -876,6 +876,6 @@ Python-Based Equivalent Version
 
 ## Conclusion
 
-The Agora Assistant Chatbot demonstrates a complete Python-based intelligent assistant platform for a College Agora-style intranet environment. The project combines Flask backend development, MongoDB Atlas cloud storage, Groq AI response generation, role-based access, document search, appointment management, embedded chatbot functionality, and professional user interface design.
+The Agora Assistant Chatbot demonstrates a complete Python-based intelligent assistant platform for a College Lasalle-style intranet environment. The project combines Flask backend development, MongoDB Atlas cloud storage, Groq AI response generation, role-based access, document search, appointment management, embedded chatbot functionality, and professional user interface design.
 
 The final system provides a strong foundation for a realistic institutional assistant and can be expanded in the future with stronger authentication, semantic search, multilingual support, analytics, and advanced administrative features.

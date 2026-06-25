@@ -17,7 +17,7 @@ def generate_ai_response(prompt):
                 {
                     "role": "system",
                     "content": (
-                        "You are Agora Assistant for College Agora. "
+                        "You are Agora Assistant for College Lasalle. "
                         "Give short, clear, student-friendly answers. "
                         "Use bullet points when helpful. "
                         "Do not write long paragraphs. "

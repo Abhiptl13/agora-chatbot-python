@@ -1,14 +1,18 @@
 {% extends "base.html" %}
 
+{% block title %}College Lasalle | Appointments{% endblock %}
+
 {% block content %}
+
+{% set role = user.role|lower if user and user.role else "student" %}
 
 <div class="portal-page-header">
     <small>Appointment Services</small>
     <h1>Schedule an Appointment</h1>
     <p>
-        Book a meeting with an academic advisor, administrator, student services
-        representative, or support staff member. Appointment requests are stored
-        in MongoDB and can be reviewed later.
+        Submit an appointment request for academic support, administrative help,
+        document questions, or technical support. Your request will be saved and
+        tracked with a status.
     </p>
 </div>
 
@@ -28,11 +32,14 @@
 
     <section class="appointment-card">
 
-        <h2>Appointment Request Form</h2>
-        <p class="section-description">
-            Complete the required information below. Your request will be saved
-            with a pending status.
-        </p>
+        <div class="card-heading">
+            <span class="section-chip">New Request</span>
+            <h2>Appointment Request</h2>
+            <p>
+                Fill in the details below. Your request will be submitted as
+                <strong>Pending</strong> until it is reviewed.
+            </p>
+        </div>
 
         <form method="POST" class="appointment-form">
 
@@ -44,6 +51,7 @@
                         type="text"
                         name="name"
                         value="{{ user.name if user else '' }}"
+                        placeholder="Enter your full name"
                         required
                     >
                 </div>
@@ -93,7 +101,7 @@
             </div>
 
             <button type="submit" class="submit-btn">
-                Submit Appointment Request
+                Submit Request
             </button>
 
         </form>
@@ -102,7 +110,19 @@
 
     <aside class="appointment-sidebar">
 
+        {% if role in ["admin", "administrator"] %}
+        <div class="admin-shortcut-card">
+            <span class="section-chip">Admin</span>
+            <h3>Review Requests</h3>
+            <p>
+                You can review all appointment requests and update their status.
+            </p>
+            <a href="/admin/appointments">Manage Appointments</a>
+        </div>
+        {% endif %}
+
         <div class="sidebar-card">
+            <span class="section-chip">Support</span>
             <h3>Available Advisors</h3>
 
             <div class="advisor-item">
@@ -126,32 +146,125 @@
             </div>
         </div>
 
-        <div class="sidebar-card">
-            <h3>Appointment Types</h3>
-
-            <ul>
-                <li>Academic Support</li>
-                <li>Administrative Help</li>
-                <li>Document Question</li>
-                <li>Technical Support</li>
-                <li>Program Consultation</li>
-            </ul>
-        </div>
-
         <div class="help-card">
-            <h3>Need urgent help?</h3>
+            <span class="section-chip">Need Help?</span>
+            <h3>Use the AI Assistant</h3>
             <p>
-                For urgent institutional issues, contact administration directly
-                or use the AI assistant for general guidance.
+                For general questions, the AI assistant can help you find the right
+                service or document before booking.
             </p>
-            <a href="/demo-site">Return to Portal</a>
+
+            <div class="side-actions">
+                <a href="/chat">Ask AI</a>
+                <a href="/documents">Documents</a>
+            </div>
         </div>
 
     </aside>
 
 </div>
 
+<section class="appointment-history-card">
+
+    <div class="history-header">
+        <div>
+            <span class="section-chip">History</span>
+            <h2>Your Appointment Requests</h2>
+            <p>
+                Track the status of your submitted appointment requests.
+            </p>
+        </div>
+
+        <span class="request-count">
+            {{ appointments|length if appointments else 0 }} request(s)
+        </span>
+    </div>
+
+    {% if appointments %}
+
+        <div class="appointment-history-grid">
+
+            {% for item in appointments %}
+
+            <div class="appointment-history-item">
+
+                <div class="history-item-top">
+                    <div>
+                        <h3>{{ item.appointment_type }}</h3>
+                        <p>{{ item.advisor }}</p>
+                    </div>
+
+                    <span class="appointment-status {{ get_status_class(item.status) }}">
+                        {{ item.status }}
+                    </span>
+                </div>
+
+                <div class="appointment-meta">
+                    <div>
+                        <strong>Date</strong>
+                        <span>{{ item.date }}</span>
+                    </div>
+
+                    <div>
+                        <strong>Time</strong>
+                        <span>{{ item.time }}</span>
+                    </div>
+
+                    <div>
+                        <strong>Submitted</strong>
+                        <span>{{ item.created_at if item.created_at else "N/A" }}</span>
+                    </div>
+                </div>
+
+                {% if item.notes %}
+                <div class="notes-box">
+                    <strong>Notes</strong>
+                    <p>{{ item.notes }}</p>
+                </div>
+                {% endif %}
+
+                {% if item.reviewed_by %}
+                <div class="review-box">
+                    Reviewed by: {{ item.reviewed_by }}
+                </div>
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-appointments">
+            <div class="empty-icon">📅</div>
+            <h3>No appointment requests yet</h3>
+            <p>
+                Submit your first appointment request using the form above.
+            </p>
+        </div>
+
+    {% endif %}
+
+</section>
+
 <style>
+
+.section-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #dfe4ff;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+}
 
 .appointment-layout {
     display: grid;
@@ -161,23 +274,35 @@
 
 .appointment-card,
 .sidebar-card,
-.help-card {
+.help-card,
+.admin-shortcut-card,
+.appointment-history-card {
     background: #ffffff;
     border: 1px solid #dbe3ef;
-    border-radius: 22px;
+    border-radius: 24px;
     padding: 26px;
     box-shadow: 0 18px 45px rgba(15,23,42,0.05);
 }
 
-.appointment-card h2,
+.card-heading h2,
 .sidebar-card h3,
-.help-card h3 {
-    margin-top: 0;
+.help-card h3,
+.admin-shortcut-card h3,
+.appointment-history-card h2 {
+    margin: 0 0 10px;
+    letter-spacing: -0.03em;
 }
 
-.section-description {
+.card-heading h2 {
+    font-size: 28px;
+}
+
+.card-heading p,
+.help-card p,
+.admin-shortcut-card p {
     color: #64748b;
     line-height: 1.6;
+    margin: 0;
 }
 
 .form-grid {
@@ -194,26 +319,28 @@
 }
 
 .form-group label {
-    font-weight: 800;
+    font-weight: 900;
     color: #172033;
+    margin-top: 0;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
     border: 1px solid #dbe3ef;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 14px;
     font-size: 15px;
     outline: none;
     background: #ffffff;
+    margin-top: 0;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
     border-color: #4f46e5;
-    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+    box-shadow: 0 0 0 4px rgba(79,70,229,0.12);
 }
 
 .form-group textarea {
@@ -230,15 +357,16 @@
     border: none;
     border-radius: 14px;
     padding: 14px 22px;
-    background: linear-gradient(135deg,#4f46e5,#7c3aed);
-    color: white;
+    background: linear-gradient(135deg,#4f46e5,#0ea5e9);
+    color: #ffffff;
     font-weight: 900;
     cursor: pointer;
     font-size: 15px;
+    box-shadow: 0 14px 28px rgba(79,70,229,0.18);
 }
 
 .submit-btn:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 .appointment-sidebar {
@@ -249,14 +377,22 @@
 
 .advisor-item {
     border: 1px solid #dbe3ef;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 14px;
     margin-bottom: 12px;
     background: #f8fafc;
+    transition: 0.2s ease;
+}
+
+.advisor-item:hover {
+    background: #ffffff;
+    border-color: #4f46e5;
+    transform: translateY(-2px);
 }
 
 .advisor-item strong {
     display: block;
+    margin-bottom: 4px;
 }
 
 .advisor-item span {
@@ -264,55 +400,231 @@
     font-size: 14px;
 }
 
-.sidebar-card ul {
-    padding-left: 20px;
-    color: #475569;
-    line-height: 1.8;
-}
-
 .help-card {
-    background: linear-gradient(135deg,#eef2ff,#ffffff);
+    background:
+        radial-gradient(circle at top right, rgba(79,70,229,0.10), transparent 35%),
+        linear-gradient(135deg,#eef2ff,#ffffff);
 }
 
-.help-card p {
-    color: #64748b;
-    line-height: 1.6;
+.admin-shortcut-card {
+    background:
+        radial-gradient(circle at top right, rgba(250,204,21,0.18), transparent 35%),
+        linear-gradient(135deg,#fffbeb,#ffffff);
 }
 
-.help-card a {
-    display: inline-block;
-    margin-top: 10px;
+.side-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.side-actions a,
+.admin-shortcut-card a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: #4f46e5;
-    color: white;
+    color: #ffffff;
     padding: 11px 14px;
     border-radius: 12px;
     text-decoration: none;
-    font-weight: 800;
+    font-weight: 900;
+    transition: 0.2s ease;
 }
 
-.alert {
-    padding: 16px 18px;
-    border-radius: 14px;
+.side-actions a:hover,
+.admin-shortcut-card a:hover {
+    transform: translateY(-2px);
+}
+
+.appointment-history-card {
+    margin-top: 28px;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
     margin-bottom: 22px;
-    font-weight: 800;
 }
 
-.success-alert {
+.history-header h2 {
+    margin: 0 0 8px;
+    font-size: 28px;
+}
+
+.history-header p {
+    margin: 0;
+    color: #64748b;
+}
+
+.request-count {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.appointment-history-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+.appointment-history-item {
+    border: 1px solid #dbe3ef;
+    border-radius: 20px;
+    padding: 20px;
+    background: #f8fafc;
+    transition: 0.2s ease;
+}
+
+.appointment-history-item:hover {
+    background: #ffffff;
+    border-color: #4f46e5;
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(15,23,42,0.06);
+}
+
+.history-item-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 18px;
+}
+
+.history-item-top h3 {
+    margin: 0 0 6px;
+}
+
+.history-item-top p {
+    margin: 0;
+    color: #64748b;
+}
+
+.appointment-status {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-approved {
     background: #dcfce7;
     color: #166534;
-    border: 1px solid #bbf7d0;
 }
 
-.error-alert {
+.status-rejected {
     background: #fee2e2;
     color: #991b1b;
-    border: 1px solid #fecaca;
 }
 
-@media(max-width:1000px) {
+.appointment-meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.appointment-meta div {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.appointment-meta strong {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.appointment-meta span {
+    font-weight: 900;
+    color: #172033;
+    word-break: break-word;
+}
+
+.notes-box,
+.review-box {
+    margin-top: 14px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.notes-box strong {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.notes-box p,
+.review-box {
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.notes-box p {
+    margin: 0;
+}
+
+.empty-appointments {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 20px;
+    padding: 34px;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: #eef2ff;
+    color: #3730a3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    font-size: 28px;
+}
+
+.empty-appointments h3 {
+    margin: 0 0 8px;
+}
+
+.empty-appointments p {
+    color: #64748b;
+    margin: 0;
+}
+
+@media(max-width:1050px) {
     .appointment-layout,
-    .form-grid {
+    .form-grid,
+    .appointment-history-grid {
         grid-template-columns: 1fr;
+    }
+
+    .appointment-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .history-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 

@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>College Agora Portal - Login</title>
+    <title>College Lasalle | Agora Assistant Login</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
     <style>
         :root {
             --primary: #4f46e5;
             --primary-dark: #3730a3;
             --secondary: #0ea5e9;
+            --purple: #7c3aed;
             --bg: #f8fafc;
+            --card: #ffffff;
             --text: #172033;
             --muted: #64748b;
             --border: #dbe3ef;
             --danger-bg: #fee2e2;
             --danger-text: #991b1b;
-            --success-bg: #dcfce7;
+            --danger-border: #fecaca;
         }
 
         * {
@@ -28,233 +32,299 @@
             min-height: 100vh;
             font-family: Arial, sans-serif;
             background:
-                radial-gradient(circle at top left, rgba(79,70,229,0.22), transparent 34%),
-                radial-gradient(circle at bottom right, rgba(14,165,233,0.18), transparent 36%),
-                linear-gradient(135deg, #eef2ff, #f8fafc 55%, #ecfeff);
+                radial-gradient(circle at 12% 15%, rgba(79, 70, 229, 0.22), transparent 32%),
+                radial-gradient(circle at 88% 18%, rgba(14, 165, 233, 0.20), transparent 30%),
+                linear-gradient(135deg, #eef2ff, #ffffff 48%, #ecfeff);
             color: var(--text);
-            display: grid;
-            grid-template-columns: 1.05fr 0.95fr;
         }
 
-        .login-hero {
-            padding: 70px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        .login-page {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            align-items: center;
+            gap: 40px;
+            padding: 48px 70px;
+        }
+
+        .login-info {
+            max-width: 720px;
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 14px;
-            margin-bottom: 50px;
+            margin-bottom: 48px;
         }
 
-        .brand-icon {
-            width: 54px;
-            height: 54px;
-            border-radius: 16px;
+        .brand-logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
-            box-shadow: 0 16px 35px rgba(79,70,229,0.28);
-        }
-
-        .brand strong {
-            display: block;
+            font-weight: 900;
             font-size: 21px;
+            letter-spacing: 0.04em;
+            box-shadow: 0 16px 35px rgba(79, 70, 229, 0.26);
         }
 
-        .brand span {
+        .brand-text strong {
+            display: block;
+            font-size: 22px;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-text span {
+            display: block;
             color: var(--muted);
             font-size: 14px;
+            margin-top: 3px;
         }
 
-        .login-hero small {
+        .eyebrow {
             color: var(--primary);
             text-transform: uppercase;
-            font-weight: 900;
             letter-spacing: 0.08em;
+            font-weight: 900;
+            font-size: 13px;
+            margin-bottom: 16px;
         }
 
-        .login-hero h1 {
-            font-size: 62px;
+        .login-info h1 {
+            font-size: 60px;
             line-height: 1.05;
-            margin: 16px 0 24px;
+            letter-spacing: -0.06em;
+            margin: 0 0 24px;
             max-width: 760px;
         }
 
-        .login-hero p {
+        .login-info p {
             color: #475569;
-            font-size: 19px;
+            font-size: 18px;
             line-height: 1.7;
-            max-width: 690px;
+            max-width: 650px;
+            margin: 0;
         }
 
-        .feature-row {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(220px, 1fr));
-            gap: 16px;
-            margin-top: 34px;
-            max-width: 720px;
-        }
-
-        .feature-card {
-            background: rgba(255,255,255,0.76);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 18px;
-            box-shadow: 0 18px 45px rgba(15,23,42,0.05);
-        }
-
-        .feature-card strong {
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .feature-card span {
-            color: var(--muted);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .login-panel {
+        .feature-badges {
             display: flex;
-            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .feature-badges span {
+            background: rgba(255,255,255,0.86);
+            color: var(--primary-dark);
+            border: 1px solid #dfe4ff;
+            padding: 10px 13px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 900;
+            box-shadow: 0 10px 24px rgba(15,23,42,0.04);
+        }
+
+        .login-card-wrap {
+            display: flex;
             justify-content: center;
-            padding: 50px;
         }
 
         .login-card {
             width: 100%;
-            max-width: 470px;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 28px;
-            padding: 34px;
+            max-width: 455px;
+            background: rgba(255,255,255,0.96);
+            border: 1px solid rgba(219, 227, 239, 0.95);
+            border-radius: 30px;
+            padding: 36px;
             box-shadow: 0 30px 90px rgba(15,23,42,0.14);
+            backdrop-filter: blur(14px);
         }
 
-        .login-card h2 {
-            margin: 0 0 10px;
-            font-size: 30px;
-        }
-
-        .login-subtitle {
-            color: var(--muted);
-            line-height: 1.6;
+        .login-card-header {
             margin-bottom: 28px;
         }
 
-        form {
+        .login-card-header h2 {
+            margin: 0 0 8px;
+            font-size: 32px;
+            letter-spacing: -0.04em;
+        }
+
+        .login-card-header p {
+            color: var(--muted);
+            line-height: 1.6;
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .login-form {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 15px;
         }
 
-        label {
-            font-weight: 800;
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 900;
             font-size: 14px;
+            color: var(--text);
         }
 
-        input {
+        .form-group input {
             border: 1px solid var(--border);
-            border-radius: 14px;
+            border-radius: 15px;
             padding: 15px;
             font-size: 15px;
             outline: none;
+            background: #ffffff;
+            color: var(--text);
+            transition: 0.2s ease;
         }
 
-        input:focus {
+        .form-group input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+            box-shadow: 0 0 0 4px rgba(79,70,229,0.12);
         }
 
-        button {
+        .signin-btn {
             margin-top: 8px;
             border: none;
-            border-radius: 14px;
+            border-radius: 15px;
             padding: 15px;
-            background: linear-gradient(135deg, var(--primary), #7c3aed);
-            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--purple));
+            color: #ffffff;
             font-size: 15px;
             font-weight: 900;
             cursor: pointer;
+            transition: 0.2s ease;
+            box-shadow: 0 16px 32px rgba(79,70,229,0.22);
         }
 
-        button:hover {
-            transform: translateY(-1px);
+        .signin-btn:hover {
+            transform: translateY(-2px);
         }
 
         .error {
             margin-top: 18px;
             background: var(--danger-bg);
             color: var(--danger-text);
-            border: 1px solid #fecaca;
-            border-radius: 14px;
+            border: 1px solid var(--danger-border);
+            border-radius: 15px;
             padding: 14px;
             font-weight: 800;
+            line-height: 1.5;
         }
 
-        .demo {
-            margin-top: 28px;
+        .demo-box {
+            margin-top: 26px;
             background: #f8fafc;
             border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 22px;
+            padding: 18px;
         }
 
-        .demo h3 {
+        .demo-box h3 {
             margin: 0 0 14px;
+            font-size: 17px;
         }
 
-        .account-box {
-            background: white;
+        .demo-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .demo-account {
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 13px;
-            margin-bottom: 10px;
+            padding: 12px;
             font-size: 14px;
+            line-height: 1.45;
         }
 
-        .account-box strong {
+        .demo-account strong {
             color: var(--primary);
         }
 
         .password-note {
-            margin-bottom: 0;
+            margin: 14px 0 0;
             color: var(--muted);
+            font-size: 14px;
         }
 
         .footer-note {
             margin-top: 22px;
             text-align: center;
             color: var(--muted);
-            font-size: 13px;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
         @media (max-width: 1050px) {
-            body {
+            .login-page {
                 grid-template-columns: 1fr;
-            }
-
-            .login-hero {
                 padding: 40px 24px;
+                gap: 30px;
             }
 
-            .login-hero h1 {
+            .login-info {
+                max-width: 760px;
+            }
+
+            .brand {
+                margin-bottom: 34px;
+            }
+
+            .login-info h1 {
                 font-size: 44px;
             }
 
-            .feature-row {
-                grid-template-columns: 1fr;
+            .login-card-wrap {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .login-page {
+                padding: 28px 18px;
             }
 
-            .login-panel {
-                padding: 24px;
+            .brand-logo {
+                width: 48px;
+                height: 48px;
+                border-radius: 16px;
+                font-size: 18px;
+            }
+
+            .brand-text strong {
+                font-size: 18px;
+            }
+
+            .login-info h1 {
+                font-size: 36px;
+            }
+
+            .login-info p {
+                font-size: 16px;
+            }
+
+            .login-card {
+                padding: 28px 22px;
+                border-radius: 24px;
+            }
+
+            .login-card-header h2 {
+                font-size: 28px;
             }
         }
     </style>
@@ -262,124 +332,124 @@
 
 <body>
 
-    <section class="login-hero">
+    <main class="login-page">
 
-        <div class="brand">
-            <div class="brand-icon">🎓</div>
-            <div>
-                <strong>College Lasalle</strong>
-                <span>AI Campus Portal</span>
-            </div>
-        </div>
+        <section class="login-info">
 
-        <small>Secure Academic Access</small>
-
-        <h1>Sign in to access your intelligent campus portal.</h1>
-
-        <p>
-            Agora Assistant provides role-based access to documents, appointments,
-            chatbot support, academic services, department information, and
-            institutional resources through a modern AI-powered portal.
-        </p>
-
-        <div class="feature-row">
-
-            <div class="feature-card">
-                <strong>Role-Based Experience</strong>
-                <span>Students, teachers, and administrators access resources based on their role.</span>
+            <div class="brand">
+                <div class="brand-logo">CL</div>
+                <div class="brand-text">
+                    <strong>College Lasalle</strong>
+                    <span>Agora Assistant</span>
+                </div>
             </div>
 
-            <div class="feature-card">
-                <strong>Embedded AI Assistant</strong>
-                <span>Ask questions and receive context-aware answers from institutional data.</span>
+            <div class="eyebrow">
+                AI Campus Portal
             </div>
 
-            <div class="feature-card">
-                <strong>MongoDB Integration</strong>
-                <span>Users, documents, appointments, knowledge base, and history are stored in MongoDB.</span>
-            </div>
+            <h1>
+                Simple access to campus support, documents, and AI assistance.
+            </h1>
 
-            <div class="feature-card">
-                <strong>Document & Appointment Tools</strong>
-                <span>Search resources and submit support requests from one portal.</span>
-            </div>
-
-        </div>
-
-    </section>
-
-    <section class="login-panel">
-
-        <div class="login-card">
-
-            <h2>Login</h2>
-
-            <p class="login-subtitle">
-                Enter your credentials to continue to the College Lasalle portal.
+            <p>
+                Sign in to use the College Lasalle portal for role-based documents,
+                appointment requests, chatbot support, and AI-powered document search.
             </p>
 
-            <form method="POST">
+            <div class="feature-badges">
+                <span>AI Chatbot</span>
+                <span>PDF Search</span>
+                <span>Appointments</span>
+                <span>Role Access</span>
+                <span>MongoDB</span>
+            </div>
 
-                <label>Email Address</label>
-                <input
-                    type="email"
-                    name="email"
-                    placeholder="Enter your email address"
-                    required
-                >
+        </section>
 
-                <label>Password</label>
-                <input
-                    type="password"
-                    name="password"
-                    placeholder="Enter your password"
-                    required
-                >
+        <section class="login-card-wrap">
 
-                <button type="submit">
-                    Sign In
-                </button>
+            <div class="login-card">
 
-            </form>
-
-            {% if error %}
-                <div class="error">
-                    {{ error }}
-                </div>
-            {% endif %}
-
-            <div class="demo">
-
-                <h3>Demo Accounts</h3>
-
-                <div class="account-box">
-                    <strong>Student</strong><br>
-                    etudiant@college.local
+                <div class="login-card-header">
+                    <h2>Welcome back</h2>
+                    <p>
+                        Enter your account details to continue.
+                    </p>
                 </div>
 
-                <div class="account-box">
-                    <strong>Teacher</strong><br>
-                    enseignant@college.local
+                <form method="POST" class="login-form">
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Enter your email address"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="signin-btn">
+                        Sign In
+                    </button>
+
+                </form>
+
+                {% if error %}
+                    <div class="error">
+                        {{ error }}
+                    </div>
+                {% endif %}
+
+                <div class="demo-box">
+
+                    <h3>Demo Accounts</h3>
+
+                    <div class="demo-grid">
+
+                        <div class="demo-account">
+                            <strong>Student</strong><br>
+                            etudiant@college.local
+                        </div>
+
+                        <div class="demo-account">
+                            <strong>Teacher</strong><br>
+                            enseignant@college.local
+                        </div>
+
+                        <div class="demo-account">
+                            <strong>Administrator</strong><br>
+                            admin@college.local
+                        </div>
+
+                    </div>
+
+                    <p class="password-note">
+                        Password: <strong>Agora2026!</strong>
+                    </p>
+
                 </div>
 
-                <div class="account-box">
-                    <strong>Administrator</strong><br>
-                    admin@college.local
+                <div class="footer-note">
+                    College Lasalle · AI Campus Portal · Python Flask Project
                 </div>
-
-                <p class="password-note">
-                    Password: <strong>Agora2026!</strong>
-                </p>
 
             </div>
 
-            <div class="footer-note">
-                College Lasalle Intelligent Academic Support Platform
-            </div>
+        </section>
 
-        </div>
-
-    </section>
+    </main>
 
 </body>
 </html>

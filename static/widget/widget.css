@@ -1,6 +1,6 @@
 /* ================================
    Agora Assistant Embedded Widget
-   Advanced Chatbot Widget Styling
+   Improved Chatbot Widget Styling
 ================================ */
 
 :root {
@@ -40,12 +40,17 @@
     align-items: center;
     justify-content: center;
 
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
 }
 
 .agora-widget-button:hover {
     transform: translateY(-3px) scale(1.03);
     box-shadow: 0 22px 45px rgba(91, 110, 225, 0.45);
+}
+
+.agora-widget-button[aria-expanded="true"] {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    font-size: 34px;
 }
 
 /* Widget Container */
@@ -73,6 +78,10 @@
     animation: agoraSlideUp 0.25s ease;
 }
 
+.agora-widget.is-open {
+    display: flex;
+}
+
 @keyframes agoraSlideUp {
     from {
         opacity: 0;
@@ -91,17 +100,19 @@
     background: linear-gradient(135deg, var(--agora-primary), var(--agora-secondary));
     color: #ffffff;
 
-    padding: 18px 20px;
+    padding: 16px 18px;
 
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
 
 .agora-widget-title {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
 }
 
 .agora-widget-title strong {
@@ -113,6 +124,13 @@
     opacity: 0.9;
 }
 
+.agora-widget-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
 .agora-widget-status {
     display: flex;
     align-items: center;
@@ -122,6 +140,7 @@
     background: rgba(255, 255, 255, 0.18);
     padding: 6px 10px;
     border-radius: 999px;
+    white-space: nowrap;
 }
 
 .agora-status-dot {
@@ -129,6 +148,34 @@
     height: 8px;
     border-radius: 50%;
     background: var(--agora-success);
+}
+
+.agora-widget-close {
+    width: 34px;
+    height: 34px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.agora-widget-close:hover {
+    background: rgba(255, 255, 255, 0.34);
+    transform: scale(1.05);
 }
 
 /* Body */
@@ -159,15 +206,15 @@
 /* Messages */
 
 .agora-message {
-    max-width: 82%;
+    max-width: 86%;
     padding: 13px 15px;
     border-radius: 16px;
 
     font-size: 14px;
     line-height: 1.55;
 
-    white-space: pre-line;
     word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .agora-message.bot {
@@ -187,12 +234,21 @@
     border-bottom-right-radius: 5px;
 }
 
+.agora-message-text {
+    white-space: normal;
+}
+
+.agora-message-source,
 .agora-message small {
     display: block;
     margin-top: 8px;
 
     color: var(--agora-muted);
     font-size: 11px;
+}
+
+.agora-message.user small {
+    color: rgba(255, 255, 255, 0.82);
 }
 
 /* Typing Indicator */
@@ -247,6 +303,7 @@
 
     outline: none;
     background: #ffffff;
+    min-width: 0;
 }
 
 .agora-input-row input:focus {
@@ -270,6 +327,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .agora-input-row button:disabled {
@@ -285,27 +343,7 @@
     text-align: center;
 }
 
-/* Mobile */
-
-@media (max-width: 520px) {
-    .agora-widget {
-        right: 14px;
-        left: 14px;
-        bottom: 92px;
-
-        width: auto;
-        height: 72vh;
-    }
-
-    .agora-widget-button {
-        right: 18px;
-        bottom: 18px;
-    }
-}
-
-/* ================================
-   Chatbot Action Buttons
-================================ */
+/* Quick Action Buttons */
 
 .agora-quick-actions {
     display: flex;
@@ -331,6 +369,8 @@
     background: #eef2ff;
     border-color: var(--agora-primary);
 }
+
+/* Dynamic Action Buttons */
 
 .agora-action-list {
     margin-top: 10px;
@@ -360,4 +400,126 @@
 
 .agora-message.bot .agora-action-link {
     width: 100%;
+}
+
+/* Tablet */
+
+@media (max-width: 768px) {
+    .agora-widget {
+        right: 18px;
+        bottom: 96px;
+        width: 370px;
+        height: 520px;
+    }
+}
+
+/* Mobile */
+
+@media (max-width: 520px) {
+    .agora-widget {
+        right: 12px;
+        left: 12px;
+        bottom: 86px;
+
+        width: auto;
+        height: 62vh;
+        max-height: 520px;
+        min-height: 420px;
+
+        border-radius: 20px;
+    }
+
+    .agora-widget-button {
+        right: 18px;
+        bottom: 18px;
+
+        width: 58px;
+        height: 58px;
+        font-size: 25px;
+    }
+
+    .agora-widget-button[aria-expanded="true"] {
+        font-size: 31px;
+    }
+
+    .agora-widget-header {
+        padding: 14px 15px;
+    }
+
+    .agora-widget-title strong {
+        font-size: 15px;
+    }
+
+    .agora-widget-title span {
+        font-size: 11px;
+    }
+
+    .agora-widget-status {
+        display: none;
+    }
+
+    .agora-widget-close {
+        width: 36px;
+        height: 36px;
+        font-size: 25px;
+        background: rgba(255, 255, 255, 0.28);
+    }
+
+    .agora-widget-body {
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .agora-message {
+        max-width: 92%;
+        font-size: 13px;
+        padding: 12px 13px;
+    }
+
+    .agora-widget-footer {
+        padding: 12px;
+    }
+
+    .agora-input-row {
+        gap: 8px;
+    }
+
+    .agora-input-row input {
+        padding: 11px 12px;
+        font-size: 13px;
+    }
+
+    .agora-input-row button {
+        width: 42px;
+        height: 42px;
+        font-size: 16px;
+    }
+
+    .agora-quick-actions {
+        gap: 7px;
+    }
+
+    .agora-quick-actions button {
+        font-size: 11px;
+        padding: 7px 10px;
+    }
+}
+
+/* Very Small Mobile */
+
+@media (max-width: 380px) {
+    .agora-widget {
+        height: 60vh;
+        min-height: 390px;
+        bottom: 82px;
+    }
+
+    .agora-widget-button {
+        width: 54px;
+        height: 54px;
+    }
+
+    .agora-message {
+        max-width: 95%;
+    }
 }

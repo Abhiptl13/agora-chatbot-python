@@ -1,378 +1,656 @@
 {% extends "base.html" %}
 
+{% block title %}College Lasalle | Documents{% endblock %}
+
 {% block content %}
 
-<div class="documents-page">
+{% set role = user.role|lower if user and user.role else "student" %}
 
-    <div class="portal-page-header">
-        <small>Document Center</small>
-        <h1>College Lasalle Document Library</h1>
-        <p>
-            Search and access role-based academic documents, student forms,
-            guides, policies, and institutional resources from one centralized page.
-        </p>
-    </div>
+<div class="portal-page-header">
+    <small>Document Center</small>
+    <h1>Documents and Resources</h1>
+    <p>
+        Search, preview, download, and ask the AI assistant about uploaded PDF documents.
+        Administrators and teachers can upload PDFs and assign access by role.
+    </p>
+</div>
 
-    <div class="document-search-card">
+{% if success %}
+<div class="alert success-alert">
+    {{ success }}
+</div>
+{% endif %}
 
+{% if error %}
+<div class="alert error-alert">
+    {{ error }}
+</div>
+{% endif %}
+
+{% if role in ["admin", "administrator", "teacher"] %}
+
+<section class="upload-card">
+
+    <div class="upload-header">
         <div>
-            <h2>Search Documents</h2>
+            <span class="section-chip">
+                {% if role == "teacher" %}
+                    Teacher Upload
+                {% else %}
+                    Admin Upload
+                {% endif %}
+            </span>
+
+            <h2>Upload PDF Document</h2>
+
             <p>
-                Use keywords such as course, registration, advisor, form,
-                schedule, exam, department, or student services.
+                Upload a PDF file, extract its text for AI search, and make it available
+                to the correct role.
             </p>
         </div>
 
-        <form method="GET" action="/documents" class="document-search-form">
-            <input
-                type="text"
-                name="q"
-                placeholder="Search documents..."
-                value="{{ request.args.get('q', '') }}"
-            >
-
-            <button type="submit">
-                Search
-            </button>
-        </form>
-
+        <div class="upload-icon">
+            PDF
+        </div>
     </div>
 
-    <div class="documents-layout">
+    <form method="POST" enctype="multipart/form-data" class="upload-form">
 
-        <aside class="document-sidebar">
+        <div class="upload-grid">
 
-            <h3>Categories</h3>
-
-            <a href="/documents" class="sidebar-link">
-                All Documents
-            </a>
-
-            <a href="/documents?q=academic" class="sidebar-link">
-                Academic Services
-            </a>
-
-            <a href="/documents?q=student" class="sidebar-link">
-                Student Services
-            </a>
-
-            <a href="/documents?q=administration" class="sidebar-link">
-                Administration
-            </a>
-
-            <a href="/documents?q=forms" class="sidebar-link">
-                Forms
-            </a>
-
-            <a href="/documents?q=guide" class="sidebar-link">
-                Guides
-            </a>
-
-        </aside>
-
-        <main class="documents-main">
-
-            <div class="documents-main-header">
-                <h2>Available Documents</h2>
-                <span>{{ documents|length }} document(s)</span>
+            <div class="form-group">
+                <label>Document Title</label>
+                <input
+                    type="text"
+                    name="title"
+                    placeholder="Example: 7-Week Project Plan"
+                    required
+                >
             </div>
 
-            <div class="documents-grid">
+            <div class="form-group">
+                <label>Category</label>
+                <input
+                    type="text"
+                    name="category"
+                    placeholder="Example: Project Planning / Academic"
+                    required
+                >
+            </div>
 
-                {% if documents %}
+            <div class="form-group">
+                <label>Audience</label>
+                <select name="audience" required>
+                    <option value="">Select audience</option>
+                    <option value="student">Student</option>
+                    <option value="teacher">Teacher</option>
 
-                    {% for doc in documents %}
+                    {% if role in ["admin", "administrator"] %}
+                        <option value="admin">Admin</option>
+                        <option value="administrator">Administrator</option>
+                        <option value="all">All Users</option>
+                    {% endif %}
+                </select>
 
-                    <div class="document-card">
-
-                        <span class="document-category">
-                            {{ doc.category if doc.category else "General" }}
-                        </span>
-
-                        <h3>
-                            {{ doc.title }}
-                        </h3>
-
-                        <strong class="document-type">
-                            {{ doc.type if doc.type else "Document" }}
-                        </strong>
-
-                        <p>
-                            {{ doc.summary if doc.summary else "No summary available for this document." }}
-                        </p>
-
-                        <a href="#" class="document-button">
-                            View Document
-                        </a>
-
-                    </div>
-
-                    {% endfor %}
-
-                {% else %}
-
-                    <div class="empty-state">
-                        <h3>No documents found</h3>
-                        <p>
-                            Try searching with another keyword or return to all documents.
-                        </p>
-
-                        <a href="/documents">
-                            View All Documents
-                        </a>
-                    </div>
-
+                {% if role == "teacher" %}
+                <small class="field-note">
+                    Teachers can upload documents for students or teachers only.
+                </small>
                 {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>PDF File</label>
+                <input
+                    type="file"
+                    name="document_file"
+                    accept="application/pdf"
+                    required
+                >
+            </div>
+
+            <div class="form-group full-width">
+                <label>Summary</label>
+                <textarea
+                    name="summary"
+                    placeholder="Write a short summary of this document..."
+                    required
+                ></textarea>
+            </div>
+
+        </div>
+
+        <button type="submit" class="upload-btn">
+            Upload PDF Document
+        </button>
+
+    </form>
+
+</section>
+
+{% endif %}
+
+<section class="document-toolbar">
+
+    <form method="GET" action="/documents" class="document-search">
+        <input
+            type="text"
+            name="q"
+            value="{{ query if query else '' }}"
+            placeholder="Search title, category, summary, PDF content..."
+        >
+
+        <button type="submit">
+            Search
+        </button>
+    </form>
+
+    {% if query %}
+    <a href="/documents" class="clear-search">
+        Clear
+    </a>
+    {% endif %}
+
+</section>
+
+<section class="documents-card">
+
+    <div class="documents-header">
+        <div>
+            <span class="section-chip">Available Files</span>
+
+            <h2>Document Library</h2>
+
+            <p>
+                {% if query %}
+                    Showing results for "{{ query }}".
+                {% else %}
+                    Showing documents available for your role.
+                {% endif %}
+            </p>
+        </div>
+
+        <span class="document-count">
+            {{ documents|length if documents else 0 }} document(s)
+        </span>
+    </div>
+
+    {% if documents %}
+
+        <div class="documents-grid">
+
+            {% for document in documents %}
+
+            <div class="document-item">
+
+                <div class="document-top">
+                    <div class="document-icon">
+                        PDF
+                    </div>
+
+                    <span class="audience-badge">
+                        {{ document.audience if document.audience else "General" }}
+                    </span>
+                </div>
+
+                <h3>{{ document.title }}</h3>
+
+                <div class="document-meta">
+                    <span>{{ document.category }}</span>
+                    <span>{{ document.type if document.type else "PDF" }}</span>
+
+                    {% if document.content_text_available %}
+                        <span class="ai-search-badge">AI Search Ready</span>
+                    {% endif %}
+                </div>
+
+                <p>
+                    {{ document.summary }}
+                </p>
+
+                <div class="document-info">
+                    {% if document.uploaded_at %}
+                    <small>
+                        Uploaded: {{ document.uploaded_at }}
+                    </small>
+                    {% endif %}
+
+                    {% if document.uploaded_by_role %}
+                    <small>
+                        Uploaded by: {{ document.uploaded_by_role }}
+                    </small>
+                    {% endif %}
+                </div>
+
+                <div class="document-actions">
+
+                    {% if document.file_url %}
+                    <a
+                        href="{{ document.file_url }}"
+                        target="_blank"
+                        class="preview-btn"
+                    >
+                        Preview
+                    </a>
+                    {% endif %}
+
+                    {% if document.download_url %}
+                    <a
+                        href="{{ document.download_url }}"
+                        class="download-btn"
+                    >
+                        Download
+                    </a>
+                    {% endif %}
+
+                    {% if not document.file_url %}
+                    <span class="missing-file">
+                        Metadata only
+                    </span>
+                    {% endif %}
+
+                </div>
 
             </div>
 
-        </main>
+            {% endfor %}
 
-    </div>
+        </div>
 
-</div>
+    {% else %}
+
+        <div class="empty-documents">
+            <div class="empty-icon">📄</div>
+            <h3>No documents found</h3>
+            <p>
+                No documents match your search or role access. Try another keyword.
+            </p>
+        </div>
+
+    {% endif %}
+
+</section>
 
 <style>
 
-.documents-page{
-    width:100%;
-    max-width:1400px;
-    margin:0 auto;
-    padding:34px 34px 60px;
+.section-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #dfe4ff;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
 }
 
-.document-search-card{
-    background:white;
-    border:1px solid #dbe3ef;
-    border-radius:24px;
-    padding:28px;
-    margin-bottom:26px;
-    display:grid;
-    grid-template-columns:1fr 1.2fr;
-    gap:24px;
-    align-items:center;
-    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+.upload-card,
+.documents-card {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 24px;
+    padding: 26px;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+    margin-bottom: 28px;
 }
 
-.document-search-card h2{
-    margin:0 0 10px;
-    color:#172033;
+.upload-header,
+.documents-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 24px;
 }
 
-.document-search-card p{
-    margin:0;
-    color:#64748b;
-    line-height:1.6;
+.upload-header h2,
+.documents-header h2 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    letter-spacing: -0.04em;
 }
 
-.document-search-form{
-    display:flex;
-    gap:12px;
+.upload-header p,
+.documents-header p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.55;
+    max-width: 760px;
 }
 
-.document-search-form input{
-    flex:1;
-    padding:15px 16px;
-    border:1px solid #dbe3ef;
-    border-radius:14px;
-    font-size:16px;
+.upload-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: #fee2e2;
+    color: #991b1b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    flex-shrink: 0;
 }
 
-.document-search-form button{
-    border:none;
-    border-radius:14px;
-    padding:0 24px;
-    background:linear-gradient(135deg,#4f46e5,#7c3aed);
-    color:white;
-    font-weight:800;
-    cursor:pointer;
+.document-count {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 9px 13px;
+    border-radius: 999px;
+    font-weight: 900;
+    white-space: nowrap;
 }
 
-.documents-layout{
-    display:grid;
-    grid-template-columns:280px 1fr;
-    gap:26px;
-    width:100%;
+.upload-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
 }
 
-.document-sidebar{
-    background:white;
-    border:1px solid #dbe3ef;
-    border-radius:22px;
-    padding:24px;
-    height:max-content;
-    box-shadow:0 18px 45px rgba(15,23,42,0.05);
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.document-sidebar h3{
-    margin-top:0;
-    margin-bottom:16px;
-    color:#172033;
+.form-group label {
+    font-weight: 900;
+    color: #172033;
+    margin-top: 0;
 }
 
-.sidebar-link{
-    display:block;
-    text-decoration:none;
-    color:#475569;
-    padding:13px 14px;
-    border-radius:12px;
-    font-weight:700;
-    margin-bottom:8px;
+.form-group input,
+.form-group select,
+.form-group textarea {
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 15px;
+    outline: none;
+    background: #ffffff;
+    margin-top: 0;
 }
 
-.sidebar-link:hover{
-    background:#eef2ff;
-    color:#4f46e5;
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(79,70,229,0.12);
 }
 
-.documents-main{
-    width:100%;
-    min-width:0;
+.form-group textarea {
+    min-height: 120px;
+    resize: vertical;
 }
 
-.documents-main-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:18px;
+.field-note {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.4;
 }
 
-.documents-main-header h2{
-    margin:0;
-    color:#172033;
+.full-width {
+    grid-column: 1 / -1;
 }
 
-.documents-main-header span{
-    background:#eef2ff;
-    color:#3730a3;
-    padding:8px 14px;
-    border-radius:999px;
-    font-weight:800;
-    font-size:13px;
+.upload-btn {
+    margin-top: 20px;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg,#4f46e5,#0ea5e9);
+    color: #ffffff;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 14px 28px rgba(79,70,229,0.18);
 }
 
-.documents-grid{
-    width:100%;
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
-    gap:24px;
-    align-items:stretch;
+.upload-btn:hover {
+    transform: translateY(-2px);
 }
 
-.document-card{
-    background:white;
-    border:1px solid #dbe3ef;
-    border-radius:24px;
-    padding:26px;
-    box-shadow:0 18px 45px rgba(15,23,42,0.05);
-    transition:0.25s;
+.document-toolbar {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 24px;
 }
 
-.document-card:hover{
-    transform:translateY(-4px);
-    box-shadow:0 25px 60px rgba(15,23,42,0.12);
+.document-search {
+    flex: 1;
+    display: flex;
+    gap: 10px;
 }
 
-.document-category{
-    display:inline-block;
-    background:#eef2ff;
-    color:#3730a3;
-    padding:7px 14px;
-    border-radius:999px;
-    font-size:12px;
-    font-weight:900;
-    text-transform:capitalize;
-    margin-bottom:16px;
+.document-search input {
+    flex: 1;
+    border: 1px solid #dbe3ef;
+    border-radius: 16px;
+    padding: 14px;
+    font-size: 15px;
+    margin-top: 0;
 }
 
-.document-card h3{
-    margin:0 0 12px;
-    color:#4338ca;
-    font-size:22px;
+.document-search input:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(79,70,229,0.12);
+    outline: none;
 }
 
-.document-type{
-    display:block;
-    color:#64748b;
-    margin-bottom:14px;
+.document-search button,
+.clear-search {
+    border: none;
+    border-radius: 16px;
+    padding: 14px 18px;
+    background: #4f46e5;
+    color: #ffffff;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+    margin-top: 0;
 }
 
-.document-card p{
-    color:#475569;
-    line-height:1.7;
-    min-height:80px;
+.clear-search {
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #dfe4ff;
 }
 
-.document-button{
-    display:inline-block;
-    margin-top:14px;
-    background:linear-gradient(135deg,#4f46e5,#7c3aed);
-    color:white;
-    text-decoration:none;
-    padding:13px 20px;
-    border-radius:13px;
-    font-weight:800;
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
 }
 
-.empty-state{
-    grid-column:1 / -1;
-    background:white;
-    border:1px dashed #cbd5e1;
-    border-radius:24px;
-    padding:40px;
-    text-align:center;
+.document-item {
+    border: 1px solid #dbe3ef;
+    border-radius: 22px;
+    padding: 20px;
+    background: #f8fafc;
+    transition: 0.2s ease;
+    display: flex;
+    flex-direction: column;
 }
 
-.empty-state h3{
-    margin-top:0;
+.document-item:hover {
+    transform: translateY(-4px);
+    border-color: #4f46e5;
+    background: #ffffff;
+    box-shadow: 0 18px 40px rgba(15,23,42,0.06);
 }
 
-.empty-state p{
-    color:#64748b;
+.document-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    gap: 12px;
 }
 
-.empty-state a{
-    display:inline-block;
-    margin-top:14px;
-    color:#4f46e5;
-    font-weight:800;
-    text-decoration:none;
+.document-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    background: #fee2e2;
+    color: #991b1b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    flex-shrink: 0;
 }
 
-@media(max-width:1000px){
+.audience-badge {
+    background: #eef2ff;
+    color: #3730a3;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: capitalize;
+}
 
-    .document-search-card{
-        grid-template-columns:1fr;
+.document-item h3 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+}
+
+.document-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.document-meta span {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    color: #475569;
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.ai-search-badge {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.document-item p {
+    color: #64748b;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.document-info {
+    margin-top: 14px;
+}
+
+.document-item small {
+    display: block;
+    color: #94a3b8;
+    margin-top: 6px;
+}
+
+.document-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 18px;
+}
+
+.preview-btn,
+.download-btn,
+.missing-file {
+    padding: 10px 13px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 900;
+    font-size: 14px;
+}
+
+.preview-btn {
+    background: #4f46e5;
+    color: #ffffff;
+}
+
+.download-btn {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.missing-file {
+    background: #e5e7eb;
+    color: #64748b;
+}
+
+.empty-documents {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 20px;
+    padding: 34px;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: #eef2ff;
+    color: #3730a3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    font-size: 28px;
+}
+
+.empty-documents h3 {
+    margin: 0 0 8px;
+}
+
+.empty-documents p {
+    color: #64748b;
+    margin: 0;
+}
+
+@media(max-width:1100px) {
+    .documents-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media(max-width:800px) {
+    .upload-grid,
+    .documents-grid {
+        grid-template-columns: 1fr;
     }
 
-    .documents-layout{
-        grid-template-columns:1fr;
+    .upload-header,
+    .documents-header,
+    .document-toolbar,
+    .document-search {
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .document-sidebar{
-        order:1;
+    .upload-icon,
+    .document-count {
+        align-self: flex-start;
     }
 
-    .documents-main{
-        order:2;
+    .document-search button,
+    .clear-search {
+        width: 100%;
+        text-align: center;
     }
-
-}
-
-@media(max-width:700px){
-
-    .documents-page{
-        padding:22px;
-    }
-
-    .document-search-form{
-        flex-direction:column;
-    }
-
-    .document-search-form button{
-        padding:15px;
-    }
-
 }
 
 </style>

@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>College Lasalle Portal</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Lasalle | Agora Assistant</title>
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='widget/widget.css') }}">
 
     <style>
@@ -10,144 +13,240 @@
             --primary: #4f46e5;
             --primary-dark: #3730a3;
             --secondary: #0ea5e9;
-            --soft-bg: #eef2ff;
-            --card-bg: #ffffff;
+            --purple: #7c3aed;
+            --bg: #f8fafc;
+            --card: #ffffff;
             --text: #172033;
             --muted: #64748b;
             --border: #dbe3ef;
             --accent: #fef3c7;
-            --success: #10b981;
+            --danger-bg: #fee2e2;
+            --danger-text: #b91c1c;
         }
 
         * {
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             margin: 0;
+            min-height: 100vh;
             font-family: Arial, sans-serif;
-            background: #f8fafc;
+            background:
+                radial-gradient(circle at top left, rgba(79,70,229,0.08), transparent 32%),
+                radial-gradient(circle at top right, rgba(14,165,233,0.08), transparent 30%),
+                var(--bg);
             color: var(--text);
         }
 
         .navbar {
-            min-height: 82px;
-            background: rgba(255,255,255,0.95);
+            min-height: 78px;
+            background: rgba(255,255,255,0.94);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 56px;
+            gap: 22px;
+            padding: 0 48px;
             position: sticky;
             top: 0;
             z-index: 100;
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(14px);
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 14px;
+            text-decoration: none;
+            color: var(--text);
+            flex-shrink: 0;
         }
 
         .brand-icon {
             width: 48px;
             height: 48px;
-            border-radius: 14px;
+            border-radius: 16px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            box-shadow: 0 14px 30px rgba(79,70,229,0.24);
         }
 
         .brand-text strong {
             display: block;
             font-size: 18px;
+            letter-spacing: -0.02em;
         }
 
         .brand-text span {
+            display: block;
             color: var(--muted);
-            font-size: 14px;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .preview-simple-icon,
+        .feature-simple-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #eef2ff, #f8fafc);
+            color: var(--primary);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin-bottom: 18px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+            transition: 0.2s ease;
+        }
+
+        .preview-simple-icon {
+            width: 58px;
+            height: 58px;
+            font-size: 28px;
+            margin-bottom: 14px;
+        }
+
+        .preview-card:hover .preview-simple-icon,
+        .feature-card:hover .feature-simple-icon {
+            background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+            border-color: #c7d2fe;
+            transform: translateY(-2px);
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            color: var(--primary);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 900;
+            cursor: pointer;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: #eef2ff;
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 24px;
-            font-weight: 700;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 800;
+            flex: 1;
         }
 
         .nav-links a {
             color: var(--text);
             text-decoration: none;
+            padding: 10px 12px;
+            border-radius: 12px;
+            transition: 0.2s ease;
+            white-space: nowrap;
+            font-size: 14px;
         }
 
         .nav-links a:hover {
+            background: #eef2ff;
             color: var(--primary);
+        }
+
+        .admin-nav-link {
+            background: #fef3c7 !important;
+            color: #92400e !important;
+            border: 1px solid #fde68a !important;
+            font-weight: 900 !important;
         }
 
         .profile {
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-shrink: 0;
         }
 
         .avatar {
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
             border-radius: 14px;
             background: var(--accent);
             color: #92400e;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
+            font-weight: 900;
         }
 
         .profile strong {
             display: block;
             font-size: 14px;
+            max-width: 145px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .profile span {
-            color: var(--muted);
-            font-size: 12px;
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 4px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: var(--primary-dark);
+            font-size: 11px;
+            font-weight: 900;
             text-transform: capitalize;
         }
 
         .logout-btn {
-            background: #fee2e2;
-            color: #b91c1c;
+            background: var(--danger-bg);
+            color: var(--danger-text);
             padding: 10px 14px;
-            border-radius: 10px;
+            border-radius: 12px;
             text-decoration: none;
-            font-weight: 800;
+            font-weight: 900;
             font-size: 13px;
             border: 1px solid #fecaca;
+            transition: 0.2s ease;
         }
 
         .logout-btn:hover {
             background: #fecaca;
+            transform: translateY(-1px);
         }
 
         .hero {
-            min-height: 620px;
-            background:
-                radial-gradient(circle at top right, rgba(14,165,233,0.18), transparent 35%),
-                linear-gradient(135deg, #eef2ff, #f8fafc 60%, #ecfeff);
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: calc(100vh - 78px);
             display: grid;
             grid-template-columns: 1.05fr 0.95fr;
             gap: 56px;
-            padding: 80px 80px 60px;
+            padding: 80px 48px 56px;
             align-items: center;
         }
 
         .eyebrow {
+            color: var(--primary);
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: var(--primary);
             font-weight: 900;
             font-size: 13px;
             margin-bottom: 18px;
@@ -156,16 +255,18 @@
         .hero h1 {
             font-size: 68px;
             line-height: 1.04;
-            font-weight: 800;
-            margin: 0 0 28px;
+            letter-spacing: -0.06em;
+            font-weight: 900;
+            margin: 0 0 26px;
             max-width: 780px;
         }
 
         .hero p {
-            max-width: 710px;
+            max-width: 700px;
             color: #475569;
-            font-size: 20px;
+            font-size: 19px;
             line-height: 1.7;
+            margin: 0;
         }
 
         .hero-actions {
@@ -176,15 +277,15 @@
         }
 
         .btn {
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 15px 20px;
-            font-weight: 800;
+            font-weight: 900;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.2s ease;
         }
 
         .btn:hover {
@@ -193,21 +294,23 @@
 
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
+            color: #ffffff;
+            box-shadow: 0 16px 32px rgba(79,70,229,0.22);
         }
 
         .btn-light {
-            background: white;
+            background: #ffffff;
             color: var(--text);
             border: 1px solid var(--border);
         }
 
         .portal-preview {
-            background: white;
+            background: rgba(255,255,255,0.96);
             border: 1px solid var(--border);
-            border-radius: 26px;
-            padding: 26px;
-            box-shadow: 0 30px 80px rgba(15,23,42,0.12);
+            border-radius: 30px;
+            padding: 28px;
+            box-shadow: 0 30px 90px rgba(15,23,42,0.12);
+            backdrop-filter: blur(14px);
         }
 
         .preview-header {
@@ -215,6 +318,11 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 22px;
+            gap: 14px;
+        }
+
+        .preview-header strong {
+            font-size: 18px;
         }
 
         .status-pill {
@@ -222,8 +330,9 @@
             color: #166534;
             padding: 8px 12px;
             border-radius: 999px;
-            font-weight: 800;
+            font-weight: 900;
             font-size: 12px;
+            white-space: nowrap;
         }
 
         .preview-grid {
@@ -236,15 +345,15 @@
             background: #f8fafc;
             border: 1px solid var(--border);
             border-radius: 18px;
-            padding: 18px;
-            min-height: 130px;
+            padding: 20px;
+            min-height: 145px;
             text-decoration: none;
             color: var(--text);
-            transition: 0.2s;
+            transition: 0.2s ease;
         }
 
         .preview-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             border-color: var(--primary);
             background: #eef2ff;
         }
@@ -252,6 +361,7 @@
         .preview-card strong {
             display: block;
             margin-bottom: 8px;
+            font-size: 16px;
         }
 
         .preview-card span {
@@ -260,305 +370,275 @@
             line-height: 1.5;
         }
 
-        .section {
-            padding: 60px 80px;
+        .features-section {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 48px 70px;
+            scroll-margin-top: 100px;
         }
 
-        .cards {
+        .features-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 22px;
-            margin-top: -80px;
-            position: relative;
-            z-index: 5;
         }
 
-        .service-card {
-            background: white;
+        .feature-card {
+            background: #ffffff;
             border: 1px solid var(--border);
-            border-radius: 18px;
+            border-radius: 22px;
             padding: 26px;
-            min-height: 170px;
-            box-shadow: 0 18px 40px rgba(15,23,42,0.06);
+            min-height: 190px;
+            box-shadow: 0 18px 45px rgba(15,23,42,0.05);
             text-decoration: none;
             color: var(--text);
-            transition: 0.2s;
+            transition: 0.2s ease;
         }
 
-        .service-card:hover {
-            transform: translateY(-3px);
+        .feature-card:hover {
+            transform: translateY(-4px);
             border-color: var(--primary);
-            background: #ffffff;
+            box-shadow: 0 22px 55px rgba(15,23,42,0.08);
         }
 
-        .service-card .icon {
-            font-size: 26px;
-            margin-bottom: 18px;
-        }
-
-        .service-card h3 {
+        .feature-card h3 {
             margin: 0 0 12px;
-            font-size: 19px;
+            font-size: 20px;
         }
 
-        .service-card p {
+        .feature-card p {
             color: var(--muted);
             line-height: 1.55;
             margin: 0;
+            font-size: 15px;
         }
 
-        .departments {
-            padding: 50px 80px;
+        .project-section {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 48px 80px;
+            scroll-margin-top: 100px;
         }
 
-        .departments h2 {
-            font-size: 42px;
-            margin-bottom: 26px;
-        }
-
-        .department-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-        }
-
-        .department-card {
-            background: white;
+        .project-panel {
+            background:
+                radial-gradient(circle at top right, rgba(14,165,233,0.14), transparent 36%),
+                linear-gradient(135deg, #ffffff, #eef2ff);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 800;
-            font-size: 18px;
-            text-decoration: none;
-            color: var(--text);
-            transition: 0.2s;
-        }
-
-        .department-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--primary);
-            color: var(--primary);
-            background: #eef2ff;
-        }
-
-        .document-section {
-            padding: 60px 80px;
-            display: grid;
-            grid-template-columns: 1.7fr 0.8fr;
-            gap: 24px;
-        }
-
-        .panel {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 28px;
+            border-radius: 30px;
+            padding: 36px;
             box-shadow: 0 18px 45px rgba(15,23,42,0.05);
-        }
-
-        .panel h2 {
-            font-size: 38px;
-            margin: 0 0 16px;
-        }
-
-        .search-row {
-            display: flex;
-            gap: 10px;
-            margin: 24px 0;
-        }
-
-        .search-row input {
-            flex: 1;
-            padding: 14px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-size: 16px;
-        }
-
-        .search-row button {
-            width: 54px;
-            border: none;
-            border-radius: 12px;
-            background: var(--primary);
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-        .doc-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 28px;
+            align-items: center;
         }
 
-        .doc-card {
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            transition: 0.2s;
+        .project-panel h2 {
+            margin: 0 0 14px;
+            font-size: 38px;
+            letter-spacing: -0.04em;
         }
 
-        .doc-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--primary);
+        .project-panel p {
+            color: var(--muted);
+            line-height: 1.7;
+            font-size: 17px;
+            margin: 0;
         }
 
-        .tag {
-            display: inline-block;
-            background: #eef2ff;
+        .tech-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tech-list span {
+            background: #ffffff;
+            border: 1px solid #dfe4ff;
             color: var(--primary-dark);
             border-radius: 999px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 800;
-            margin-bottom: 10px;
+            padding: 9px 12px;
+            font-weight: 900;
+            font-size: 13px;
         }
 
-        .doc-card h3 {
-            margin: 0 0 10px;
-            font-size: 17px;
-        }
-
-        .doc-card p {
-            color: var(--muted);
-            line-height: 1.45;
-            font-size: 14px;
-        }
-
-        .doc-open-link {
-            color: var(--primary);
-            font-weight: 800;
-            text-decoration: none;
-        }
-
-        .doc-open-link:hover {
-            text-decoration: underline;
-        }
-
-        .sidebar-item {
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            text-decoration: none;
-            color: var(--text);
-            transition: 0.2s;
-        }
-
-        .sidebar-item:hover {
-            background: #eef2ff;
-            border-color: var(--primary);
-            transform: translateY(-2px);
-        }
-
-        .count {
-            background: #eef2ff;
-            border-radius: 999px;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: var(--primary);
-        }
-
-        .services-section {
-            padding: 80px;
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 60px;
-        }
-
-        .service-list {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 18px;
-        }
-
-        .service-list-item {
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            margin-bottom: 12px;
-            text-decoration: none;
-            color: var(--text);
-            display: block;
-            transition: 0.2s;
-        }
-
-        .service-list-item:hover {
-            transform: translateY(-2px);
-            background: #eef2ff;
-            border-color: var(--primary);
-        }
-
-        .service-list-item p {
-            color: var(--muted);
-            line-height: 1.5;
+        .anchor-fix {
+            scroll-margin-top: 100px;
+            height: 1px;
         }
 
         .footer {
-            padding: 34px 80px;
+            padding: 32px 48px;
             border-top: 1px solid var(--border);
             color: var(--muted);
             display: flex;
             justify-content: space-between;
+            gap: 14px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .footer strong {
+            color: var(--text);
         }
 
         .footer a {
-            color: var(--text);
-            font-weight: 800;
+            color: var(--primary);
+            font-weight: 900;
             text-decoration: none;
         }
 
-        .footer a:hover {
-            color: var(--primary);
-        }
-
-        @media (max-width: 1000px) {
-            .hero,
-            .document-section,
-            .services-section {
-                grid-template-columns: 1fr;
-            }
-
-            .cards,
-            .department-grid,
-            .doc-grid,
-            .preview-grid {
-                grid-template-columns: 1fr;
-            }
-
+        @media (max-width: 1120px) {
             .navbar {
-                padding: 16px 20px;
-                height: auto;
-                gap: 16px;
+                padding: 16px 24px;
                 flex-wrap: wrap;
+                min-height: auto;
+            }
+
+            .brand {
+                flex: 1;
+            }
+
+            .mobile-menu-toggle {
+                display: flex;
+                order: 2;
+            }
+
+            .profile {
+                order: 3;
+                width: 100%;
+                justify-content: flex-end;
+                padding-top: 10px;
+                border-top: 1px solid var(--border);
             }
 
             .nav-links {
+                order: 4;
+                width: 100%;
+                flex: none;
                 display: none;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px;
+                background: #ffffff;
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                padding: 14px;
+                box-shadow: 0 18px 45px rgba(15,23,42,0.06);
+            }
+
+            .nav-links.active {
+                display: grid;
+            }
+
+            .nav-links a {
+                text-align: center;
+                background: #f8fafc;
+                border: 1px solid #eef2f7;
+                padding: 13px 10px;
+                white-space: normal;
             }
 
             .hero,
-            .section,
-            .departments,
-            .document-section,
-            .services-section {
-                padding-left: 24px;
-                padding-right: 24px;
+            .project-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
 
             .hero h1 {
-                font-size: 44px;
+                font-size: 48px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .navbar {
+                padding: 14px 16px;
+            }
+
+            .brand-icon {
+                width: 42px;
+                height: 42px;
+                font-size: 16px;
+            }
+
+            .brand-text strong {
+                font-size: 16px;
+            }
+
+            .brand-text span {
+                font-size: 12px;
+            }
+
+            .mobile-menu-toggle {
+                padding: 9px 12px;
+                font-size: 13px;
+            }
+
+            .nav-links {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .profile {
+                justify-content: space-between;
+            }
+
+            .profile > div:nth-child(2) {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .hero {
+                padding: 48px 18px 40px;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .preview-grid,
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .features-section,
+            .project-section {
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+
+            .project-panel {
+                padding: 26px;
+            }
+
+            .project-panel h2 {
+                font-size: 30px;
+            }
+
+            .footer {
+                padding: 26px 18px;
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .nav-links {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -567,237 +647,220 @@
 <body>
 
     <nav class="navbar">
-        <div class="brand">
-            <div class="brand-icon">🎓</div>
+        <a href="/demo-site" class="brand">
+            <div class="brand-icon">CL</div>
             <div class="brand-text">
                 <strong>College Lasalle</strong>
-                <span>AI Campus Portal</span>
+                <span>Agora Assistant</span>
             </div>
-        </div>
+        </a>
 
-        <div class="nav-links">
+        <button
+            type="button"
+            class="mobile-menu-toggle"
+            id="demoMobileMenuToggle"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+            aria-controls="demoNavLinks"
+        >
+            ☰ Menu
+        </button>
+
+        <div class="nav-links" id="demoNavLinks">
             <a href="/dashboard">Dashboard</a>
-            <a href="#departments">Departments</a>
-            <a href="#documents">Documents</a>
-            <a href="#services">Services</a>
+
+            {% if user and user.role and user.role|lower in ["admin", "administrator"] %}
+                <a href="/admin/appointments" class="admin-nav-link">Admin Panel</a>
+            {% endif %}
+
+            <a href="/documents">Documents</a>
+            <a href="/appointments">Appointments</a>
             <a href="/chat">AI Assistant</a>
-            <a href="#" onclick="document.getElementById('agoraWidgetToggle').click()">💬 Chatbot</a>
+            <a href="/history">History</a>
+            <a href="#" onclick="event.preventDefault(); document.getElementById('agoraWidgetToggle').click()">Chatbot</a>
         </div>
 
         <div class="profile">
             <div class="avatar">
                 {{ user.name[0] if user and user.name else "U" }}
             </div>
+
             <div>
                 <strong>{{ user.name if user else "Guest User" }}</strong>
-                <span>{{ user.role if user else "visitor" }}</span>
+                <span class="role-badge">{{ user.role if user else "visitor" }}</span>
             </div>
+
             <a class="logout-btn" href="/logout">Logout</a>
         </div>
     </nav>
 
     <section class="hero" id="home">
+
         <div>
-            <div class="eyebrow">AI-Powered Student Portal</div>
-            <h1>One intelligent portal for campus services, documents, and support.</h1>
+            <div class="eyebrow">College Lasalle AI Campus Portal</div>
+
+            <h1>
+                One clean portal for documents, appointments, and AI support.
+            </h1>
+
             <p>
-                Access academic resources, student services, course documents, appointments,
-                and institutional support from a modern portal powered by an embedded AI assistant.
+                Agora Assistant helps students, teachers, and administrators access campus resources,
+                upload and search PDFs, request appointments, and receive AI-powered support from one place.
             </p>
 
             <div class="hero-actions">
-                <a href="#documents" class="btn btn-primary">📄 Browse Documents</a>
-                <a href="/appointments" class="btn btn-light">📅 Book Appointment</a>
-                <a href="/chat" class="btn btn-light">🤖 Full AI Assistant</a>
-                <a href="#" class="btn btn-light" onclick="document.getElementById('agoraWidgetToggle').click()">💬 Open Chatbot</a>
+                <a href="/documents" class="btn btn-primary">Browse Documents</a>
+                <a href="/chat" class="btn btn-light">Open AI Assistant</a>
+                <a href="/appointments" class="btn btn-light">Book Appointment</a>
             </div>
         </div>
 
         <div class="portal-preview">
+
             <div class="preview-header">
-                <strong>Live Portal Overview</strong>
-                <span class="status-pill">Connected</span>
+                <strong>Portal Overview</strong>
+                <span class="status-pill">Live Demo</span>
             </div>
 
             <div class="preview-grid">
-                <a href="/history" class="preview-card">
-                    <strong>📚 Knowledge Base</strong>
-                    <span>Review previous AI interactions and knowledge-based answers.</span>
+
+                <a href="/documents" class="preview-card">
+                    <div class="preview-simple-icon">📄</div>
+                    <strong>AI Searchable PDFs</strong>
+                    <span>Admins and teachers can upload PDFs with role-based preview, download, and chatbot search.</span>
                 </a>
 
                 <a href="/chat" class="preview-card">
-                    <strong>🤖 AI Assistant</strong>
-                    <span>Use the full Groq-powered chatbot page connected to the portal.</span>
-                </a>
-
-                <a href="/documents" class="preview-card">
-                    <strong>📄 Documents</strong>
-                    <span>Searchable course outlines, guides, forms, and resources.</span>
+                    <div class="preview-simple-icon">🤖</div>
+                    <strong>AI Assistant</strong>
+                    <span>Ask questions using portal knowledge, uploaded documents, and recent conversation memory.</span>
                 </a>
 
                 <a href="/appointments" class="preview-card">
-                    <strong>📅 Appointments</strong>
-                    <span>Student support and academic advising request workflow.</span>
+                    <div class="preview-simple-icon">📅</div>
+                    <strong>Appointments</strong>
+                    <span>Submit academic support or advising requests and track the approval status.</span>
                 </a>
+
+                <a href="/dashboard" class="preview-card">
+                    <div class="preview-simple-icon">📊</div>
+                    <strong>Dashboard</strong>
+                    <span>View role-based activity, document access, conversations, and appointments.</span>
+                </a>
+
             </div>
+
         </div>
+
     </section>
 
-    <section class="section">
-        <div class="cards">
-            <a class="service-card" href="/dashboard">
-                <div class="icon">🎓</div>
-                <h3>Role-Based Portal</h3>
-                <p>Students, teachers, and administrators see information according to their role.</p>
+    <section class="features-section" id="services">
+
+        <div class="features-grid">
+
+            <a href="/dashboard" class="feature-card">
+                <div class="feature-simple-icon">🎓</div>
+                <h3>Role-Based Access</h3>
+                <p>Students, teachers, and administrators see features and documents based on their role.</p>
             </a>
 
-            <a class="service-card" href="/documents">
-                <div class="icon">📄</div>
-                <h3>Smart Documents</h3>
-                <p>Course outlines, forms, guides, and institutional documents are searchable.</p>
+            <a href="/documents" class="feature-card">
+                <div class="feature-simple-icon">📚</div>
+                <h3>PDF Document Center</h3>
+                <p>Upload, preview, download, and search PDF documents through a clean document interface.</p>
             </a>
 
-            <a class="service-card" href="/appointments">
-                <div class="icon">📅</div>
-                <h3>Appointments</h3>
-                <p>Users can request academic support, registrar assistance, and advising help.</p>
+            <a href="/chat" class="feature-card">
+                <div class="feature-simple-icon">🤖</div>
+                <h3>AI Chatbot</h3>
+                <p>The chatbot uses Groq AI, PDF content, knowledge base records, and recent chat memory.</p>
             </a>
 
-            <a class="service-card" href="/chat">
-                <div class="icon">🤖</div>
-                <h3>Embedded Chatbot</h3>
-                <p>The AI assistant stays available across the website without opening a separate page.</p>
+            <a href="/admin/appointments" class="feature-card">
+                <div class="feature-simple-icon">🛠️</div>
+                <h3>Admin Workflow</h3>
+                <p>Administrators can review appointment requests and approve or reject pending submissions.</p>
             </a>
+
         </div>
+
     </section>
 
-    <section class="departments" id="departments">
-        <div class="eyebrow">Academic Areas</div>
-        <h2>Departments and Academic Resources</h2>
+    <div id="departments" class="anchor-fix"></div>
 
-        <div class="department-grid">
-            <a href="/documents?q=computer+science" class="department-card">Computer Science <span>›</span></a>
-            <a href="/documents?q=business" class="department-card">Business Administration <span>›</span></a>
-            <a href="/documents?q=design" class="department-card">Design and Digital Arts <span>›</span></a>
-            <a href="/documents?q=marketing" class="department-card">Marketing and Commerce <span>›</span></a>
-            <a href="/documents?q=social+sciences" class="department-card">Social Sciences <span>›</span></a>
-            <a href="/documents?q=general+education" class="department-card">General Education <span>›</span></a>
-        </div>
-    </section>
+    <section class="project-section" id="documents">
 
-    <section class="document-section" id="documents">
-        <div class="panel">
-            <div class="eyebrow">Document Center</div>
-            <h2>Accessible Documents and Categories</h2>
-            <p>
-                Documents are organized by category and role. This section represents how students,
-                teachers, and administrators can search institutional resources from one portal.
-            </p>
+        <div class="project-panel">
 
-            <form method="GET" action="/documents" class="search-row">
-                <input
-                    type="text"
-                    name="q"
-                    placeholder="Search for a course outline, PDF, guide, or form..."
-                >
-                <button type="submit">⌕</button>
-            </form>
+            <div>
+                <div class="eyebrow">Project Highlights</div>
 
-            <strong>26 visible documents</strong>
+                <h2>
+                    Built as a complete Python version of an AI campus assistant.
+                </h2>
 
-            <div class="doc-grid" style="margin-top: 18px;">
-                <div class="doc-card">
-                    <span class="tag">ADMINISTRATION</span>
-                    <h3>Student Forms Directory</h3>
-                    <p>Certificates, transcripts, modification requests, and official student documents.</p>
-                    <a href="/documents?q=forms" class="doc-open-link">Open ↗</a>
-                </div>
-
-                <div class="doc-card">
-                    <span class="tag">ACADEMIC</span>
-                    <h3>Course Registration Guide</h3>
-                    <p>Instructions for course registration, enrollment support, and academic planning.</p>
-                    <a href="/documents?q=registration" class="doc-open-link">Open ↗</a>
-                </div>
-
-                <div class="doc-card">
-                    <span class="tag">SUPPORT</span>
-                    <h3>Advisor Booking Guide</h3>
-                    <p>Information about booking academic advisor appointments and student support meetings.</p>
-                    <a href="/documents?q=advisor" class="doc-open-link">Open ↗</a>
-                </div>
+                <p>
+                    This project combines Flask, MongoDB, role-based authentication, real PDF uploads,
+                    AI document search, chatbot memory, appointment management, and deployment-ready structure.
+                    The design focuses on simplicity, stability, and a professional College Lasalle portal experience.
+                </p>
             </div>
-        </div>
 
-        <aside class="panel">
-            <div class="eyebrow">Explore</div>
-            <h3>Available Categories</h3>
-
-            <a href="/documents?q=faculty" class="sidebar-item">
-                <div>
-                    <strong>Faculty Documents</strong><br>
-                    <span>Course outlines and teaching resources.</span>
-                </div>
-                <div class="count">16</div>
-            </a>
-
-            <a href="/documents?q=student+services" class="sidebar-item">
-                <div>
-                    <strong>Student Services</strong><br>
-                    <span>Guides, appointments, and campus support.</span>
-                </div>
-                <div class="count">6</div>
-            </a>
-
-            <a href="/documents?q=administration" class="sidebar-item">
-                <div>
-                    <strong>Administration</strong><br>
-                    <span>Forms and official requests.</span>
-                </div>
-                <div class="count">4</div>
-            </a>
-        </aside>
-    </section>
-
-    <section class="services-section" id="services">
-        <div>
-            <div class="eyebrow">User Services</div>
-            <h2 style="font-size: 34px;">Services Available Through the Chatbot</h2>
-            <p style="font-size: 18px; color: var(--muted); line-height: 1.6;">
-                Appointment requests, document searches, and natural language questions
-                are accessible through the integrated chatbot window.
-            </p>
-
-            <div style="margin-top: 30px;">
-                <span class="tag">Mon-Fri, 8 AM – 6 PM</span>
-                <span class="tag">Campus Services</span>
+            <div class="tech-list">
+                <span>Python</span>
+                <span>Flask</span>
+                <span>MongoDB</span>
+                <span>Groq AI</span>
+                <span>PDF Search</span>
+                <span>RAG</span>
+                <span>Role Access</span>
+                <span>Render</span>
             </div>
+
         </div>
 
-        <div class="service-list">
-            <a href="/appointments" class="service-list-item">
-                <strong>📅 Book an Appointment</strong>
-                <p>Student Affairs, Registrar Office, IT Services, and Academic Advising.</p>
-            </a>
-
-            <a href="/documents" class="service-list-item">
-                <strong>📄 Search Documents</strong>
-                <p>Course outlines, forms, guides, and institutional resources.</p>
-            </a>
-
-            <a href="/chat" class="service-list-item">
-                <strong>💬 Ask a Question</strong>
-                <p>Receive AI-powered answers with sources and supporting information.</p>
-            </a>
-        </div>
     </section>
+
+    <div id="chatbot" class="anchor-fix"></div>
 
     <footer class="footer">
-        <strong>College Lasalle - AI Campus Portal Demo</strong>
-        <a href="#" onclick="document.getElementById('agoraWidgetToggle').click()">💬 Chatbot</a>
+        <strong>College Lasalle · Agora Assistant</strong>
+        <a href="#" onclick="event.preventDefault(); document.getElementById('agoraWidgetToggle').click()">Open Chatbot</a>
     </footer>
 
-    <script src="{{ url_for('static', filename='widget/widget.js') }}?v=7"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const menuToggle = document.getElementById("demoMobileMenuToggle");
+            const navLinks = document.getElementById("demoNavLinks");
+
+            if (!menuToggle || !navLinks) {
+                return;
+            }
+
+            menuToggle.addEventListener("click", function () {
+                const isOpen = navLinks.classList.toggle("active");
+
+                menuToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+                menuToggle.setAttribute(
+                    "aria-label",
+                    isOpen ? "Close navigation menu" : "Open navigation menu"
+                );
+
+                menuToggle.innerHTML = isOpen ? "× Close" : "☰ Menu";
+            });
+
+            navLinks.querySelectorAll("a").forEach(function (link) {
+                link.addEventListener("click", function () {
+                    navLinks.classList.remove("active");
+                    menuToggle.setAttribute("aria-expanded", "false");
+                    menuToggle.setAttribute("aria-label", "Open navigation menu");
+                    menuToggle.innerHTML = "☰ Menu";
+                });
+            });
+        });
+    </script>
+
+    <script src="{{ url_for('static', filename='widget/widget.js') }}?v=8"></script>
 
 </body>
 </html>

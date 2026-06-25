@@ -1,10 +1,16 @@
 {% extends "base.html" %}
 
+{% block title %}College Lasalle | Server Error{% endblock %}
+
 {% block content %}
 
 <div class="error-container">
 
-    <div class="error-card">
+    <div class="error-card server-error-card">
+
+        <div class="error-icon">
+            ⚠️
+        </div>
 
         <div class="error-code">
             500
@@ -13,15 +19,19 @@
         <h1>Internal Server Error</h1>
 
         <p>
-            An unexpected error occurred while processing your request.
-            The system may be temporarily unavailable. Please try again
-            later or return to the portal dashboard.
+            An unexpected error occurred while processing your request. The system
+            may be temporarily unavailable. Please try again, return to the portal,
+            or use the AI assistant for general guidance.
         </p>
 
         <div class="error-actions">
 
             <a href="/demo-site" class="primary-btn">
                 Return to Portal
+            </a>
+
+            <a href="/dashboard" class="secondary-btn">
+                Dashboard
             </a>
 
             <a href="/chat" class="secondary-btn">
@@ -36,69 +46,122 @@
 
 <style>
 
-.error-container{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:65vh;
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 68vh;
+    padding: 20px;
 }
 
-.error-card{
-    max-width:700px;
-    width:100%;
-    background:white;
-    border:1px solid #dbe3ef;
-    border-radius:28px;
-    padding:50px;
-    text-align:center;
-    box-shadow:0 25px 60px rgba(15,23,42,0.08);
+.error-card {
+    max-width: 720px;
+    width: 100%;
+    background:
+        radial-gradient(circle at top right, rgba(239,68,68,0.10), transparent 35%),
+        #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 30px;
+    padding: 52px;
+    text-align: center;
+    box-shadow: 0 25px 65px rgba(15,23,42,0.08);
 }
 
-.error-code{
-    font-size:120px;
-    font-weight:900;
-    line-height:1;
-    background:linear-gradient(135deg,#ef4444,#f97316);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    margin-bottom:10px;
+.error-icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 22px;
+    background: #fee2e2;
+    color: #991b1b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    font-size: 32px;
 }
 
-.error-card h1{
-    margin-top:0;
-    color:#172033;
+.error-code {
+    font-size: 118px;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(135deg,#ef4444,#f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+    letter-spacing: -0.08em;
 }
 
-.error-card p{
-    color:#64748b;
-    line-height:1.8;
-    margin-bottom:30px;
+.error-card h1 {
+    margin: 0 0 14px;
+    color: #172033;
+    font-size: 34px;
+    letter-spacing: -0.04em;
 }
 
-.error-actions{
-    display:flex;
-    justify-content:center;
-    gap:16px;
-    flex-wrap:wrap;
+.error-card p {
+    color: #64748b;
+    line-height: 1.8;
+    margin: 0 auto 30px;
+    max-width: 560px;
 }
 
-.primary-btn{
-    background:linear-gradient(135deg,#4f46e5,#7c3aed);
-    color:white;
-    text-decoration:none;
-    padding:14px 22px;
-    border-radius:14px;
-    font-weight:800;
+.error-actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
 }
 
-.secondary-btn{
-    background:white;
-    color:#4f46e5;
-    text-decoration:none;
-    padding:14px 22px;
-    border-radius:14px;
-    border:1px solid #dbe3ef;
-    font-weight:800;
+.primary-btn,
+.secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-weight: 900;
+    transition: 0.2s ease;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg,#4f46e5,#0ea5e9);
+    color: #ffffff;
+    box-shadow: 0 14px 28px rgba(79,70,229,0.18);
+}
+
+.secondary-btn {
+    background: #ffffff;
+    color: #3730a3;
+    border: 1px solid #dbe3ef;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover {
+    transform: translateY(-2px);
+}
+
+@media(max-width:600px) {
+    .error-card {
+        padding: 34px 22px;
+    }
+
+    .error-code {
+        font-size: 86px;
+    }
+
+    .error-card h1 {
+        font-size: 28px;
+    }
+
+    .error-actions {
+        flex-direction: column;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+        width: 100%;
+    }
 }
 
 </style>

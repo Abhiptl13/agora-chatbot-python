@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}College Lasalle | Admin Appointments{% endblock %}
+
+{% block content %}
+
+<div class="portal-page-header">
+    <small>Admin Panel</small>
+    <h1>Appointment Management</h1>
+    <p>
+        Review appointment requests, check student details, and update each request
+        as Pending, Approved, or Rejected.
+    </p>
+</div>
+
+<section class="admin-stats-grid">
+
+    <a href="/admin/appointments" class="admin-stat-card {% if not status_filter %}active{% endif %}">
+        <span>Total Requests</span>
+        <strong>{{ stats.total if stats else 0 }}</strong>
+        <p>All submitted appointment requests.</p>
+    </a>
+
+    <a href="/admin/appointments?status=Pending" class="admin-stat-card pending {% if status_filter == 'Pending' %}active{% endif %}">
+        <span>Pending</span>
+        <strong>{{ stats.pending if stats else 0 }}</strong>
+        <p>Requests waiting for review.</p>
+    </a>
+
+    <a href="/admin/appointments?status=Approved" class="admin-stat-card approved {% if status_filter == 'Approved' %}active{% endif %}">
+        <span>Approved</span>
+        <strong>{{ stats.approved if stats else 0 }}</strong>
+        <p>Requests approved by admin.</p>
+    </a>
+
+    <a href="/admin/appointments?status=Rejected" class="admin-stat-card rejected {% if status_filter == 'Rejected' %}active{% endif %}">
+        <span>Rejected</span>
+        <strong>{{ stats.rejected if stats else 0 }}</strong>
+        <p>Requests rejected after review.</p>
+    </a>
+
+</section>
+
+<section class="admin-table-card">
+
+    <div class="admin-table-header">
+        <div>
+            <span class="section-chip">Requests</span>
+
+            <h2>Appointment Requests</h2>
+
+            <p>
+                {% if status_filter %}
+                    Showing {{ status_filter }} appointment requests.
+                {% else %}
+                    Showing all appointment requests.
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="admin-header-actions">
+            <a href="/dashboard" class="secondary-link">
+                Dashboard
+            </a>
+
+            <a href="/appointments" class="secondary-link primary-secondary">
+                Appointment Form
+            </a>
+        </div>
+    </div>
+
+    {% if appointments %}
+
+        <div class="appointment-table-wrap">
+
+            <table class="appointment-table">
+
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Type</th>
+                        <th>Advisor</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                        <th>Review Info</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in appointments %}
+
+                    <tr>
+
+                        <td>
+                            <strong>{{ item.name }}</strong>
+
+                            <small>
+                                {{ item.user if item.user else "No email available" }}
+                            </small>
+
+                            <small>
+                                Role: {{ item.role if item.role else "N/A" }}
+                            </small>
+                        </td>
+
+                        <td>
+                            {{ item.appointment_type }}
+                        </td>
+
+                        <td>
+                            {{ item.advisor }}
+                        </td>
+
+                        <td>
+                            {{ item.date }}
+                        </td>
+
+                        <td>
+                            {{ item.time }}
+                        </td>
+
+                        <td>
+                            <span class="appointment-status {{ get_status_class(item.status) }}">
+                                {{ item.status }}
+                            </span>
+                        </td>
+
+                        <td class="notes-cell">
+                            {% if item.notes %}
+                                {{ item.notes }}
+                            {% else %}
+                                <span class="muted">No notes</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <small>
+                                <strong>Created:</strong>
+                                {{ item.created_at if item.created_at else "N/A" }}
+                            </small>
+
+                            <small>
+                                <strong>Updated:</strong>
+                                {{ item.updated_at if item.updated_at else "N/A" }}
+                            </small>
+
+                            {% if item.reviewed_by %}
+                            <small>
+                                <strong>Reviewed by:</strong>
+                                {{ item.reviewed_by }}
+                            </small>
+                            {% else %}
+                            <small class="muted">
+                                Not reviewed yet
+                            </small>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="action-buttons">
+
+                                {% if item.status != "Approved" %}
+                                <form
+                                    method="POST"
+                                    action="/admin/appointments/{{ item._id }}/approve"
+                                    onsubmit="return confirm('Are you sure you want to approve this appointment request?');"
+                                >
+                                    <button type="submit" class="approve-btn">
+                                        Approve
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button type="button" class="disabled-btn" disabled>
+                                    Approved
+                                </button>
+                                {% endif %}
+
+                                {% if item.status != "Rejected" %}
+                                <form
+                                    method="POST"
+                                    action="/admin/appointments/{{ item._id }}/reject"
+                                    onsubmit="return confirm('Are you sure you want to reject this appointment request?');"
+                                >
+                                    <button type="submit" class="reject-btn">
+                                        Reject
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button type="button" class="disabled-btn" disabled>
+                                    Rejected
+                                </button>
+                                {% endif %}
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-admin-state">
+            <div class="empty-icon">📅</div>
+
+            <h3>No appointment requests found</h3>
+
+            <p>
+                No appointment requests match the selected filter.
+            </p>
+
+            <a href="/admin/appointments">
+                View All Requests
+            </a>
+        </div>
+
+    {% endif %}
+
+</section>
+
+<style>
+
+.section-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #dfe4ff;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+}
+
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.admin-stat-card {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 22px;
+    padding: 22px;
+    text-decoration: none;
+    color: #172033;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+    transition: 0.2s ease;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-3px);
+    border-color: #4f46e5;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.08);
+}
+
+.admin-stat-card.active {
+    border-color: #4f46e5;
+    background:
+        radial-gradient(circle at top right, rgba(79,70,229,0.12), transparent 35%),
+        #eef2ff;
+}
+
+.admin-stat-card span {
+    display: block;
+    color: #64748b;
+    font-weight: 900;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.admin-stat-card strong {
+    display: block;
+    font-size: 38px;
+    margin: 10px 0 6px;
+    letter-spacing: -0.05em;
+}
+
+.admin-stat-card p {
+    color: #64748b;
+    line-height: 1.45;
+    margin: 0;
+    font-size: 14px;
+}
+
+.admin-stat-card.pending {
+    border-color: #fde68a;
+}
+
+.admin-stat-card.approved {
+    border-color: #bbf7d0;
+}
+
+.admin-stat-card.rejected {
+    border-color: #fecaca;
+}
+
+.admin-table-card {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 24px;
+    padding: 26px;
+    box-shadow: 0 18px 45px rgba(15,23,42,0.05);
+}
+
+.admin-table-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+    margin-bottom: 22px;
+}
+
+.admin-table-header h2 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    letter-spacing: -0.04em;
+}
+
+.admin-table-header p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.admin-header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.secondary-link {
+    background: #eef2ff;
+    color: #3730a3;
+    padding: 12px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s ease;
+}
+
+.secondary-link:hover {
+    transform: translateY(-2px);
+}
+
+.primary-secondary {
+    background: #4f46e5;
+    color: #ffffff;
+}
+
+.appointment-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+}
+
+.appointment-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1150px;
+    background: #ffffff;
+}
+
+.appointment-table th,
+.appointment-table td {
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    vertical-align: top;
+}
+
+.appointment-table tr:last-child td {
+    border-bottom: none;
+}
+
+.appointment-table th {
+    background: #f8fafc;
+    color: #172033;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+.appointment-table td {
+    color: #172033;
+    font-size: 14px;
+}
+
+.appointment-table small {
+    display: block;
+    color: #64748b;
+    margin-top: 5px;
+    line-height: 1.4;
+}
+
+.notes-cell {
+    max-width: 240px;
+    color: #475569;
+    line-height: 1.5;
+}
+
+.appointment-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.muted {
+    color: #94a3b8;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 112px;
+}
+
+.action-buttons form {
+    margin: 0;
+}
+
+.action-buttons button {
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-weight: 900;
+    cursor: pointer;
+    margin-top: 0;
+    transition: 0.2s ease;
+}
+
+.action-buttons button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.approve-btn {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.approve-btn:hover {
+    background: #bbf7d0;
+}
+
+.reject-btn {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.reject-btn:hover {
+    background: #fecaca;
+}
+
+.disabled-btn {
+    background: #e5e7eb;
+    color: #6b7280;
+    cursor: not-allowed !important;
+}
+
+.empty-admin-state {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 20px;
+    padding: 34px;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: #eef2ff;
+    color: #3730a3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    font-size: 28px;
+}
+
+.empty-admin-state h3 {
+    margin: 0 0 8px;
+}
+
+.empty-admin-state p {
+    color: #64748b;
+    margin: 0;
+}
+
+.empty-admin-state a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 16px;
+    background: #4f46e5;
+    color: #ffffff;
+    padding: 11px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 900;
+}
+
+@media(max-width:1050px) {
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .admin-table-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media(max-width:650px) {
+    .admin-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-header-actions {
+        width: 100%;
+    }
+
+    .secondary-link {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+</style>
+
+{% endblock %}

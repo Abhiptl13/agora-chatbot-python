@@ -1,3 +1,5 @@
+import re
+
 from services.ai_service import generate_ai_response
 
 from mongo_db import (
@@ -54,7 +56,7 @@ def get_casual_response(question):
     if question_lower in how_are_you:
         return (
             "I’m doing well, thank you! How are you? "
-            "I’m here to help you with College Agora services, documents, appointments, and general portal support."
+            "I’m here to help you with College Lasalle services, documents, appointments, and general portal support."
         )
 
     if question_lower in thanks:
@@ -65,17 +67,39 @@ def get_casual_response(question):
 
     if question_lower in identity:
         return (
-            "I’m Agora Assistant, the AI chatbot for the College Agora portal. "
+            "I’m Agora Assistant, the AI chatbot for the College Lasalle portal. "
             "I can help users find documents, book appointments, understand services, and navigate the portal."
         )
 
     if question_lower in help_questions:
         return (
             "I can help you with document searches, appointment booking, student services, department information, "
-            "portal navigation, and general College Agora support."
+            "portal navigation, and general College Lasalle support."
         )
 
     return None
+
+
+def normalize_text(value):
+    return str(value or "").lower().strip()
+
+
+def role_can_access(role, audience):
+    role_lower = normalize_text(role)
+
+    if role_lower in ["admin", "administrator"]:
+        return True
+
+    if isinstance(audience, list):
+        audience_values = [normalize_text(item) for item in audience]
+        return role_lower in audience_values or "all" in audience_values or "general" in audience_values
+
+    audience_lower = normalize_text(audience)
+
+    if not audience_lower:
+        return False
+
+    return audience_lower == role_lower or audience_lower in ["all", "general"]
 
 
 def calculate_score(question_lower, item, fields):
@@ -88,7 +112,7 @@ def calculate_score(question_lower, item, fields):
             for element in value:
                 element_lower = str(element).lower()
 
-                if element_lower in question_lower:
+                if element_lower and element_lower in question_lower:
                     score += 4
 
                 for word in element_lower.split():
@@ -108,6 +132,166 @@ def calculate_score(question_lower, item, fields):
     return score
 
 
+def extract_relevant_pdf_snippet(question_lower, pdf_text, max_chars=2500):
+    if not pdf_text:
+        return ""
+
+    keywords = re.findall(r"\b[a-zA-Z]{4,}\b", question_lower.lower())
+    keywords = list(set(keywords))
+
+    sentences = re.split(r'(?<=[.!?])\s+', pdf_text.strip())
+
+    scored_sentences = []
+
+    for sentence in sentences:
+        sentence_clean = sentence.strip()
+
+        if not sentence_clean:
+            continue
+
+        sentence_lower = sentence_clean.lower()
+        score = 0
+
+        for keyword in keywords:
+            if keyword in sentence_lower:
+                score += 1
+
+        if score > 0:
+            scored_sentences.append((score, sentence_clean))
+
+    if scored_sentences:
+        scored_sentences.sort(reverse=True, key=lambda item: item[0])
+
+        selected_text = ""
+
+        for score, sentence in scored_sentences[:8]:
+            if len(selected_text) + len(sentence) > max_chars:
+                break
+
+            selected_text += sentence + " "
+
+        return selected_text.strip()
+
+    return pdf_text[:max_chars].strip()
+
+
+def format_conversation_memory(recent_history):
+    if not recent_history:
+        return ""
+
+    memory_lines = []
+
+    # recent_history comes newest first from app.py.
+    # Reverse it so the AI sees the conversation in natural order.
+    for item in reversed(recent_history):
+        previous_question = item.get("question", "")
+        previous_answer = item.get("answer", "")
+        previous_source = item.get("source", "")
+
+        if previous_question:
+            memory_lines.append(f"Previous User Question: {previous_question}")
+
+        if previous_answer:
+            memory_lines.append(f"Previous Assistant Answer: {previous_answer}")
+
+        if previous_source:
+            memory_lines.append(f"Previous Source: {previous_source}")
+
+        memory_lines.append("---")
+
+    return "\n".join(memory_lines).strip()
+
+
+def build_memory_search_text(question, recent_history):
+    memory_text = format_conversation_memory(recent_history)
+
+    if not memory_text:
+        return question.lower()
+
+    combined_text = f"{question}\n{memory_text}"
+
+    # Keep memory search text controlled.
+    return combined_text.lower()[:2500]
+
+
+def is_appointment_question(text):
+    text_lower = text.lower()
+
+    appointment_words = [
+        "appointment",
+        "appointments",
+        "advisor",
+        "book",
+        "booking",
+        "meeting",
+        "schedule",
+        "counsellor",
+        "counselor"
+    ]
+
+    return any(word in text_lower for word in appointment_words)
+
+
+def clean_unsupported_claims(answer, question):
+    """
+    Prevent the chatbot from promising features that the application does not implement.
+    The project saves appointment requests as Pending, but it does not send confirmation emails.
+    """
+
+    if not answer:
+        return answer
+
+    if not is_appointment_question(question):
+        return answer
+
+    answer_lower = answer.lower()
+
+    email_promise_detected = (
+        "email" in answer_lower and (
+            "confirmation" in answer_lower
+            or "sent" in answer_lower
+            or "receive" in answer_lower
+            or "notify" in answer_lower
+            or "notification" in answer_lower
+        )
+    )
+
+    if not email_promise_detected:
+        return answer
+
+    sentences = re.split(r'(?<=[.!?])\s+', answer.strip())
+
+    filtered_sentences = []
+
+    for sentence in sentences:
+        sentence_lower = sentence.lower()
+
+        contains_email_promise = (
+            "email" in sentence_lower and (
+                "confirmation" in sentence_lower
+                or "sent" in sentence_lower
+                or "receive" in sentence_lower
+                or "notify" in sentence_lower
+                or "notification" in sentence_lower
+            )
+        )
+
+        if not contains_email_promise:
+            filtered_sentences.append(sentence)
+
+    corrected_answer = " ".join(filtered_sentences).strip()
+
+    correction_note = (
+        "Your appointment request will be saved as Pending in the system. "
+        "Email confirmation is not currently implemented in this version."
+    )
+
+    if corrected_answer:
+        return f"{corrected_answer} {correction_note}"
+
+    return correction_note
+
+
 def get_action_metadata(result_type, title, source):
     text = f"{result_type} {title} {source}".lower()
 
@@ -117,28 +301,28 @@ def get_action_metadata(result_type, title, source):
             "url": "/appointments"
         }
 
-    if "document" in text or "course" in text or "form" in text or "guide" in text:
+    if "document" in text or "course" in text or "form" in text or "guide" in text or "pdf" in text:
         return {
             "label": "Open Document Center",
-            "url": "#documents"
+            "url": "/documents"
         }
 
     if "department" in text or "computer science" in text or "business" in text:
         return {
             "label": "Open Departments",
-            "url": "#departments"
+            "url": "/demo-site#departments"
         }
 
     if "service" in text or "support" in text:
         return {
             "label": "Open Services",
-            "url": "#services"
+            "url": "/demo-site#services"
         }
 
     if "chatbot" in text or "assistant" in text:
         return {
             "label": "Open Chatbot",
-            "url": "#chatbot"
+            "url": "/demo-site#chatbot"
         }
 
     if "history" in text or "conversation" in text:
@@ -149,7 +333,7 @@ def get_action_metadata(result_type, title, source):
 
     return {
         "label": "Go to Portal Home",
-        "url": "#home"
+        "url": "/demo-site"
     }
 
 
@@ -172,7 +356,7 @@ def search_knowledge_base(question_lower, role):
     knowledge = list(knowledge_collection.find({}))
 
     for item in knowledge:
-        if role not in item.get("audience", []):
+        if not role_can_access(role, item.get("audience", [])):
             continue
 
         score = calculate_score(
@@ -200,21 +384,49 @@ def search_documents(question_lower, role):
     documents = list(documents_collection.find({}))
 
     for item in documents:
-        if role not in item.get("audience", []):
+        if not role_can_access(role, item.get("audience", [])):
             continue
 
         score = calculate_score(
             question_lower,
             item,
-            ["title", "category", "summary", "type"]
+            [
+                "title",
+                "category",
+                "summary",
+                "type",
+                "original_file_name",
+                "file_name",
+                "content_text"
+            ]
         )
 
         if score > 0:
+            content = item.get("summary", "")
+
+            pdf_text = item.get("content_text", "")
+
+            if pdf_text:
+                relevant_pdf_text = extract_relevant_pdf_snippet(
+                    question_lower,
+                    pdf_text,
+                    max_chars=2500
+                )
+
+                if relevant_pdf_text:
+                    content += f"\n\nRelevant Extracted PDF Content:\n{relevant_pdf_text}"
+
+            if item.get("file_url"):
+                content += f"\n\nPreview Link: {item.get('file_url')}."
+
+            if item.get("download_url"):
+                content += f"\nDownload Link: {item.get('download_url')}."
+
             results.append(
                 build_result(
                     score=score,
                     title=item.get("title", "Document"),
-                    content=item.get("summary", ""),
+                    content=content,
                     source=item.get("title", "Document Center"),
                     result_type="Document"
                 )
@@ -298,13 +510,82 @@ def search_portal_departments(question_lower):
     return results
 
 
-def chatbot_response(question, role):
+def build_fallback_answer(best_result):
+    """
+    Used if the AI API fails or returns an unavailable response.
+    This prevents the chatbot from showing only a generic API error.
+    """
+
+    content = best_result.get("content", "")
+    source = best_result.get("source", "internal knowledge base")
+
+    if content:
+        return (
+            "I found related information from the internal knowledge base, "
+            "but the AI response service may be temporarily unavailable. "
+            f"Here is the relevant information from {source}: {content}"
+        )
+
+    return (
+        "I found a related record, but the AI response service may be temporarily unavailable. "
+        "Please try again or use the suggested portal section."
+    )
+
+
+def build_memory_only_answer(question, recent_history):
+    memory_context = format_conversation_memory(recent_history)
+
+    if not memory_context:
+        return None
+
+    prompt = f"""
+You are Agora Assistant, an AI chatbot embedded inside the College Lasalle portal.
+
+The user is asking a follow-up question. Use the recent conversation memory only to understand the user's topic.
+Do not invent information. If the information is not available, guide the user to the correct portal page.
+
+Recent Conversation Memory:
+{memory_context}
+
+Current User Question:
+{question}
+
+Important Application Rules:
+- The application can save appointment requests with the status "Pending".
+- The application does not currently send appointment confirmation emails.
+- Do not say that an email confirmation will be sent.
+- Do not promise email notifications, SMS notifications, automatic approval, or features that are not implemented.
+- If the user asks about appointments, say that the request can be submitted and saved as Pending.
+- If the user asks about documents, guide them to the Document Center.
+- If the user asks about previous conversation, answer based on memory.
+
+Instructions:
+- Answer clearly and professionally.
+- Keep the answer concise.
+- Do not exceed 6 bullet points.
+- Do not invent unsupported information.
+"""
+
+    try:
+        answer = generate_ai_response(prompt)
+    except Exception:
+        answer = None
+
+    if answer:
+        return clean_unsupported_claims(answer, question)
+
+    return None
+
+
+def chatbot_response(question, role, recent_history=None):
+    recent_history = recent_history or []
+
     casual_answer = get_casual_response(question)
 
     if casual_answer:
         return casual_answer, "General Conversation"
 
-    question_lower = question.lower()
+    question_lower = build_memory_search_text(question, recent_history)
 
     all_results = []
 
@@ -313,6 +594,8 @@ def chatbot_response(question, role):
     all_results.extend(search_website_content(question_lower))
     all_results.extend(search_portal_services(question_lower))
     all_results.extend(search_portal_departments(question_lower))
+
+    memory_context = format_conversation_memory(recent_history)
 
     if all_results:
         all_results.sort(
@@ -337,19 +620,32 @@ Recommended Link: {result["action_url"]}
 """
 
         prompt = f"""
-You are Agora Assistant, an AI chatbot embedded inside the College Agora portal.
+You are Agora Assistant, an AI chatbot embedded inside the College Lasalle portal.
 
-Use the provided portal, document, service, department, and knowledge-base context to answer the user's question.
+Use the provided portal, document, service, department, knowledge-base context, and recent conversation memory to answer the user's question.
 
-Context:
+Recent Conversation Memory:
+{memory_context if memory_context else "No previous conversation memory available."}
+
+Retrieved Context:
 {context}
 
-User Question:
+Current User Question:
 {question}
+
+Important Application Rules:
+- The application can save appointment requests with the status "Pending".
+- The application does not currently send appointment confirmation emails.
+- Do not say that an email confirmation will be sent.
+- Do not promise email notifications, SMS notifications, automatic approval, or features that are not implemented.
+- If the user asks about appointments, say that the request can be submitted and saved as Pending.
+- If the user asks about uploaded PDFs, documents, or files, tell the user to use the Document Center preview/download buttons.
+- If extracted PDF content is provided, answer using that content first.
 
 Instructions:
 - Answer clearly and professionally.
-- Prefer information from the provided context.
+- Prefer information from the retrieved context.
+- Use recent conversation memory only to understand follow-up questions.
 - If the user asks where to go, mention the correct section or page.
 - If the question is about appointments, documents, departments, services, support, or chatbot features, tell the user what action they can take.
 - Keep the answer concise.
@@ -358,9 +654,33 @@ Instructions:
 - Do not invent unsupported information.
 """
 
-        answer = generate_ai_response(prompt)
+        try:
+            answer = generate_ai_response(prompt)
+        except Exception:
+            answer = build_fallback_answer(best_result)
+
+        if not answer:
+            answer = build_fallback_answer(best_result)
+
+        unavailable_phrases = [
+            "ai service is currently unavailable",
+            "service is currently unavailable",
+            "please try again later",
+            "connection error"
+        ]
+
+        if any(phrase in answer.lower() for phrase in unavailable_phrases):
+            answer = build_fallback_answer(best_result)
+
+        answer = clean_unsupported_claims(answer, question)
 
         return answer, best_result["source"]
+
+    # If no database search result matched, still try to answer using recent memory.
+    memory_answer = build_memory_only_answer(question, recent_history)
+
+    if memory_answer:
+        return memory_answer, "Conversation Memory"
 
     return (
         "I could not find information related to your question. You can try asking about services, documents, appointments, departments, registration, support, or chatbot features.",

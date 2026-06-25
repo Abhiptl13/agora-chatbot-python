@@ -1,7 +1,26 @@
 import os
-from flask import Flask, render_template, request, redirect, session, jsonify
+import re
+import gridfs
+from io import BytesIO
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    session,
+    jsonify,
+    send_file
+)
 from datetime import datetime
 from dotenv import load_dotenv
+from bson import ObjectId
+from bson.errors import InvalidId
+from gridfs.errors import NoFile
+from pymongo import MongoClient
+from pymongo.errors import ConfigurationError
+from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
+from pypdf import PdfReader
 
 from mongo_db import (
     users_collection,
@@ -23,6 +42,41 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret_key")
 
+ALLOWED_EXTENSIONS = {"pdf"}
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
+
+
+# -----------------------------
+# MONGODB GRIDFS CONFIGURATION
+# -----------------------------
+
+def create_gridfs_storage():
+    mongo_uri = os.getenv("MONGO_URI")
+
+    if not mongo_uri:
+        return None
+
+    mongo_client = MongoClient(mongo_uri)
+
+    database_name = (
+        os.getenv("MONGO_DB_NAME")
+        or os.getenv("MONGO_DATABASE")
+        or "agora_chatbot_db"
+    )
+
+    try:
+        mongo_database = mongo_client.get_default_database()
+    except ConfigurationError:
+        mongo_database = mongo_client[database_name]
+
+    return gridfs.GridFS(
+        mongo_database,
+        collection="document_files"
+    )
+
+
+document_file_storage = create_gridfs_storage()
+
 
 # -----------------------------
 # HELPER FUNCTIONS
@@ -36,18 +90,242 @@ def current_user():
     return session.get("user")
 
 
+def is_admin():
+    user = current_user()
+
+    if not user:
+        return False
+
+    return user.get("role", "").lower() in ["admin", "administrator"]
+
+
+def is_teacher():
+    user = current_user()
+
+    if not user:
+        return False
+
+    return user.get("role", "").lower() == "teacher"
+
+
+def can_upload_documents():
+    user = current_user()
+
+    if not user:
+        return False
+
+    return user.get("role", "").lower() in ["admin", "administrator", "teacher"]
+
+
+def get_allowed_upload_audiences(user):
+    if not user:
+        return []
+
+    role = user.get("role", "").lower()
+
+    if role in ["admin", "administrator"]:
+        return ["student", "teacher", "admin", "administrator", "all", "general"]
+
+    if role == "teacher":
+        return ["student", "teacher"]
+
+    return []
+
+
+def admin_required():
+    return login_required() and is_admin()
+
+
+def make_json_safe(value):
+    if isinstance(value, ObjectId):
+        return str(value)
+
+    if isinstance(value, list):
+        return [make_json_safe(item) for item in value]
+
+    if isinstance(value, dict):
+        return {
+            key: make_json_safe(item)
+            for key, item in value.items()
+        }
+
+    return value
+
+
 def serialize_document(document):
-    document["_id"] = str(document["_id"])
-    return document
+    return make_json_safe(document)
 
 
 def create_timestamp():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def get_object_id_or_none(value):
+    try:
+        return ObjectId(str(value))
+    except (InvalidId, TypeError, ValueError):
+        return None
+
+
+def get_safe_filename_or_none(filename):
+    safe_filename = secure_filename(filename)
+
+    if not safe_filename:
+        return None
+
+    if safe_filename != filename:
+        return None
+
+    return safe_filename
+
+
 def get_request_question():
     data = request.get_json(silent=True) or {}
     return (data.get("question") or data.get("message") or "").strip()
+
+
+def get_status_class(status):
+    status_lower = str(status).lower()
+
+    if status_lower == "approved":
+        return "status-approved"
+
+    if status_lower == "rejected":
+        return "status-rejected"
+
+    return "status-pending"
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def can_access_document(user, document):
+    if not user or not document:
+        return False
+
+    role = user.get("role", "").lower()
+    audience = document.get("audience", "")
+
+    if role in ["admin", "administrator"]:
+        return True
+
+    if isinstance(audience, list):
+        audience_values = [str(item).lower() for item in audience]
+        return role in audience_values or "all" in audience_values or "general" in audience_values
+
+    audience = str(audience).lower()
+
+    return audience == role or audience in ["all", "general"]
+
+
+def build_document_access_query(role):
+    role_lower = str(role).lower()
+
+    if role_lower in ["admin", "administrator"]:
+        return {}
+
+    return {
+        "audience": {
+            "$in": [
+                role,
+                role_lower,
+                role_lower.capitalize(),
+                "all",
+                "general"
+            ]
+        }
+    }
+
+
+def verify_and_upgrade_password(user, entered_password):
+    stored_password = str(user.get("password", ""))
+
+    if stored_password.startswith("scrypt:") or stored_password.startswith("pbkdf2:"):
+        return check_password_hash(stored_password, entered_password)
+
+    if stored_password == entered_password:
+        hashed_password = generate_password_hash(entered_password)
+
+        users_collection.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "password": hashed_password,
+                    "password_updated_at": create_timestamp()
+                }
+            }
+        )
+
+        return True
+
+    return False
+
+
+def extract_pdf_text_from_bytes(file_bytes):
+    text = ""
+
+    try:
+        reader = PdfReader(BytesIO(file_bytes))
+
+        for page in reader.pages:
+            page_text = page.extract_text()
+
+            if page_text:
+                text += page_text + "\n"
+
+    except Exception:
+        text = ""
+
+    return text.strip()[:15000]
+
+
+def build_safe_document_search_query(query):
+    safe_query = re.escape(query)
+
+    return {
+        "$or": [
+            {"title": {"$regex": safe_query, "$options": "i"}},
+            {"category": {"$regex": safe_query, "$options": "i"}},
+            {"summary": {"$regex": safe_query, "$options": "i"}},
+            {"type": {"$regex": safe_query, "$options": "i"}},
+            {"original_file_name": {"$regex": safe_query, "$options": "i"}},
+            {"content_text": {"$regex": safe_query, "$options": "i"}}
+        ]
+    }
+
+
+def get_pdf_response_from_gridfs(document, as_attachment=False):
+    if document_file_storage is None:
+        return None
+
+    file_id = document.get("file_id")
+    file_object_id = get_object_id_or_none(file_id)
+
+    if not file_object_id:
+        return None
+
+    try:
+        grid_file = document_file_storage.get(file_object_id)
+    except NoFile:
+        return None
+    except Exception:
+        return None
+
+    file_bytes = grid_file.read()
+
+    download_name = (
+        document.get("original_file_name")
+        or document.get("file_name")
+        or "document.pdf"
+    )
+
+    return send_file(
+        BytesIO(file_bytes),
+        mimetype="application/pdf",
+        as_attachment=as_attachment,
+        download_name=download_name
+    )
 
 
 # -----------------------------
@@ -72,11 +350,10 @@ def login():
             return render_template("login.html", error=error)
 
         user = users_collection.find_one({
-            "email": email,
-            "password": password
+            "email": email
         })
 
-        if user:
+        if user and verify_and_upgrade_password(user, password):
             session["user"] = {
                 "id": user.get("id"),
                 "name": user.get("name"),
@@ -85,7 +362,6 @@ def login():
                 "department": user.get("department", "")
             }
 
-            # After successful login, open the portal-style demo page
             return redirect("/demo-site")
 
         error = "Invalid email or password. Please try again."
@@ -111,10 +387,12 @@ def dashboard():
 
     user = current_user()
 
+    document_count = documents_collection.count_documents(
+        build_document_access_query(user["role"])
+    )
+
     dashboard_stats = {
-        "documents": documents_collection.count_documents({
-            "audience": user["role"]
-        }),
+        "documents": document_count,
         "conversations": conversations_collection.count_documents({
             "user": user["email"]
         }),
@@ -123,10 +401,29 @@ def dashboard():
         })
     }
 
+    admin_stats = None
+
+    if is_admin():
+        admin_stats = {
+            "total_appointments": appointments_collection.count_documents({}),
+            "pending_appointments": appointments_collection.count_documents({
+                "status": "Pending"
+            }),
+            "approved_appointments": appointments_collection.count_documents({
+                "status": "Approved"
+            }),
+            "rejected_appointments": appointments_collection.count_documents({
+                "status": "Rejected"
+            }),
+            "total_conversations": conversations_collection.count_documents({}),
+            "total_documents": documents_collection.count_documents({})
+        }
+
     return render_template(
         "dashboard.html",
         user=user,
-        stats=dashboard_stats
+        stats=dashboard_stats,
+        admin_stats=admin_stats
     )
 
 
@@ -138,7 +435,7 @@ def chat():
     return render_template("chat.html", user=current_user())
 
 
-@app.route("/documents")
+@app.route("/documents", methods=["GET", "POST"])
 def documents():
     if not login_required():
         return redirect("/login")
@@ -147,19 +444,121 @@ def documents():
     role = user["role"]
     query = request.args.get("q", "").lower().strip()
 
-    mongo_query = {
-        "audience": role
-    }
+    success = None
+    error = None
+
+    if request.method == "POST":
+        if not can_upload_documents():
+            error = "Only administrators and teachers can upload documents."
+
+        elif document_file_storage is None:
+            error = "MongoDB file storage is not configured. Please check MONGO_URI."
+
+        else:
+            title = request.form.get("title", "").strip()
+            category = request.form.get("category", "").strip()
+            summary = request.form.get("summary", "").strip()
+            audience = request.form.get("audience", "").strip().lower()
+            document_file = request.files.get("document_file")
+
+            allowed_audiences = get_allowed_upload_audiences(user)
+
+            if not title or not category or not summary or not audience:
+                error = "Please fill all required document fields."
+
+            elif audience not in allowed_audiences:
+                error = "You are not allowed to upload documents for this audience."
+
+            elif not document_file or document_file.filename == "":
+                error = "Please select a PDF file to upload."
+
+            elif not allowed_file(document_file.filename):
+                error = "Only PDF files are allowed."
+
+            else:
+                original_filename = secure_filename(document_file.filename)
+
+                if not original_filename:
+                    error = "Invalid PDF file name."
+
+                else:
+                    try:
+                        file_bytes = document_file.read()
+
+                        if not file_bytes:
+                            error = "The selected PDF file is empty."
+
+                        else:
+                            timestamp_name = datetime.now().strftime("%Y%m%d%H%M%S")
+                            saved_filename = f"{timestamp_name}_{original_filename}"
+
+                            pdf_text = extract_pdf_text_from_bytes(file_bytes)
+
+                            gridfs_file_id = document_file_storage.put(
+                                file_bytes,
+                                filename=saved_filename,
+                                content_type="application/pdf",
+                                metadata={
+                                    "title": title,
+                                    "category": category,
+                                    "audience": audience,
+                                    "uploaded_by": user["email"],
+                                    "uploaded_by_role": user["role"],
+                                    "uploaded_at": create_timestamp(),
+                                    "original_file_name": original_filename
+                                }
+                            )
+
+                            document_data = {
+                                "title": title,
+                                "category": category,
+                                "summary": summary,
+                                "type": "PDF",
+                                "audience": audience,
+                                "file_id": gridfs_file_id,
+                                "file_name": saved_filename,
+                                "original_file_name": original_filename,
+                                "file_url": f"/documents/preview/{saved_filename}",
+                                "download_url": f"/documents/download/{saved_filename}",
+                                "uploaded_by": user["email"],
+                                "uploaded_by_role": user["role"],
+                                "uploaded_at": create_timestamp(),
+                                "has_file": True,
+                                "storage": "MongoDB GridFS",
+                                "content_type": "application/pdf",
+                                "file_size_bytes": len(file_bytes),
+                                "content_text": pdf_text,
+                                "content_text_available": bool(pdf_text)
+                            }
+
+                            documents_collection.insert_one(document_data)
+
+                            if pdf_text:
+                                success = "PDF document uploaded successfully to MongoDB and text was extracted for chatbot search."
+                            else:
+                                success = "PDF document uploaded successfully to MongoDB. Text could not be extracted, but preview and download are available."
+
+                    except Exception:
+                        error = "PDF document upload failed. Please try again."
+
+    mongo_query = build_document_access_query(role)
 
     if query:
-        mongo_query["$or"] = [
-            {"title": {"$regex": query, "$options": "i"}},
-            {"category": {"$regex": query, "$options": "i"}},
-            {"summary": {"$regex": query, "$options": "i"}},
-            {"type": {"$regex": query, "$options": "i"}}
-        ]
+        search_query = build_safe_document_search_query(query)
 
-    document_results = list(documents_collection.find(mongo_query))
+        if mongo_query:
+            mongo_query = {
+                "$and": [
+                    mongo_query,
+                    search_query
+                ]
+            }
+        else:
+            mongo_query = search_query
+
+    document_results = list(
+        documents_collection.find(mongo_query).sort("uploaded_at", -1)
+    )
 
     document_results = [
         serialize_document(doc) for doc in document_results
@@ -169,8 +568,76 @@ def documents():
         "documents.html",
         user=user,
         documents=document_results,
-        query=query
+        query=query,
+        success=success,
+        error=error
     )
+
+
+@app.route("/documents/preview/<filename>")
+def preview_document(filename):
+    if not login_required():
+        return redirect("/login")
+
+    safe_filename = get_safe_filename_or_none(filename)
+
+    if not safe_filename:
+        return render_template("404.html"), 404
+
+    document = documents_collection.find_one({
+        "file_name": safe_filename
+    })
+
+    if not document:
+        return render_template("404.html"), 404
+
+    user = current_user()
+
+    if not can_access_document(user, document):
+        return redirect("/documents")
+
+    pdf_response = get_pdf_response_from_gridfs(
+        document,
+        as_attachment=False
+    )
+
+    if not pdf_response:
+        return render_template("404.html"), 404
+
+    return pdf_response
+
+
+@app.route("/documents/download/<filename>")
+def download_document(filename):
+    if not login_required():
+        return redirect("/login")
+
+    safe_filename = get_safe_filename_or_none(filename)
+
+    if not safe_filename:
+        return render_template("404.html"), 404
+
+    document = documents_collection.find_one({
+        "file_name": safe_filename
+    })
+
+    if not document:
+        return render_template("404.html"), 404
+
+    user = current_user()
+
+    if not can_access_document(user, document):
+        return redirect("/documents")
+
+    pdf_response = get_pdf_response_from_gridfs(
+        document,
+        as_attachment=True
+    )
+
+    if not pdf_response:
+        return render_template("404.html"), 404
+
+    return pdf_response
 
 
 @app.route("/appointments", methods=["GET", "POST"])
@@ -203,17 +670,30 @@ def appointments():
                 "time": time,
                 "notes": notes,
                 "status": "Pending",
-                "created_at": create_timestamp()
+                "created_at": create_timestamp(),
+                "updated_at": create_timestamp()
             }
 
             appointments_collection.insert_one(appointment_data)
-            success = "Appointment request submitted successfully."
+            success = "Appointment request submitted successfully. Your request is saved as Pending."
+
+    appointment_results = list(
+        appointments_collection.find({
+            "user": user["email"]
+        }).sort("created_at", -1)
+    )
+
+    appointment_results = [
+        serialize_document(item) for item in appointment_results
+    ]
 
     return render_template(
         "appointments.html",
         user=user,
         success=success,
-        error=error
+        error=error,
+        appointments=appointment_results,
+        get_status_class=get_status_class
     )
 
 
@@ -241,6 +721,109 @@ def history():
     )
 
 
+# -----------------------------
+# ADMIN ROUTES
+# -----------------------------
+
+@app.route("/admin")
+def admin_home():
+    if not admin_required():
+        return redirect("/dashboard")
+
+    return redirect("/admin/appointments")
+
+
+@app.route("/admin/appointments")
+def admin_appointments():
+    if not admin_required():
+        return redirect("/dashboard")
+
+    status_filter = request.args.get("status", "").strip()
+
+    mongo_query = {}
+
+    if status_filter:
+        mongo_query["status"] = status_filter
+
+    appointment_results = list(
+        appointments_collection.find(mongo_query).sort("created_at", -1)
+    )
+
+    appointment_results = [
+        serialize_document(item) for item in appointment_results
+    ]
+
+    stats = {
+        "total": appointments_collection.count_documents({}),
+        "pending": appointments_collection.count_documents({"status": "Pending"}),
+        "approved": appointments_collection.count_documents({"status": "Approved"}),
+        "rejected": appointments_collection.count_documents({"status": "Rejected"})
+    }
+
+    return render_template(
+        "admin_appointments.html",
+        user=current_user(),
+        appointments=appointment_results,
+        stats=stats,
+        status_filter=status_filter,
+        get_status_class=get_status_class
+    )
+
+
+@app.route("/admin/appointments/<appointment_id>/approve", methods=["POST"])
+def approve_appointment(appointment_id):
+    if not admin_required():
+        return redirect("/dashboard")
+
+    appointment_object_id = get_object_id_or_none(appointment_id)
+
+    if not appointment_object_id:
+        return render_template("404.html"), 404
+
+    result = appointments_collection.update_one(
+        {"_id": appointment_object_id},
+        {
+            "$set": {
+                "status": "Approved",
+                "updated_at": create_timestamp(),
+                "reviewed_by": current_user()["email"]
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return render_template("404.html"), 404
+
+    return redirect("/admin/appointments")
+
+
+@app.route("/admin/appointments/<appointment_id>/reject", methods=["POST"])
+def reject_appointment(appointment_id):
+    if not admin_required():
+        return redirect("/dashboard")
+
+    appointment_object_id = get_object_id_or_none(appointment_id)
+
+    if not appointment_object_id:
+        return render_template("404.html"), 404
+
+    result = appointments_collection.update_one(
+        {"_id": appointment_object_id},
+        {
+            "$set": {
+                "status": "Rejected",
+                "updated_at": create_timestamp(),
+                "reviewed_by": current_user()["email"]
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return render_template("404.html"), 404
+
+    return redirect("/admin/appointments")
+
+
 @app.route("/logout")
 def logout():
     session.clear()
@@ -253,6 +836,7 @@ def health():
         "status": "running",
         "project": "Agora Assistant Chatbot - Python Version",
         "database": "MongoDB Atlas",
+        "file_storage": "MongoDB GridFS",
         "ai_provider": "Groq API"
     })
 
@@ -263,6 +847,11 @@ def health():
 
 @app.route("/api/widget/message", methods=["POST"])
 def api_widget_message():
+    if not login_required():
+        return jsonify({
+            "error": "Unauthorized. Please log in to use the chatbot widget."
+        }), 401
+
     question = get_request_question()
 
     if not question:
@@ -270,26 +859,29 @@ def api_widget_message():
             "error": "Message cannot be empty."
         }), 400
 
-    # If the user is logged in, use their role.
-    # Otherwise default to student for public widget behavior.
     user = current_user()
-    role = user["role"] if user else "student"
+    role = user["role"]
 
-    answer, source = chatbot_response(question, role)
+    recent_history = list(
+        conversations_collection.find({
+            "user": user["email"]
+        }).sort("timestamp", -1).limit(3)
+    )
 
-    if user:
-        conversation_data = {
-            "user": user["email"],
-            "name": user["name"],
-            "role": role,
-            "question": question,
-            "answer": answer,
-            "source": source,
-            "module": "embedded_widget",
-            "timestamp": create_timestamp()
-        }
+    answer, source = chatbot_response(question, role, recent_history)
 
-        conversations_collection.insert_one(conversation_data)
+    conversation_data = {
+        "user": user["email"],
+        "name": user["name"],
+        "role": role,
+        "question": question,
+        "answer": answer,
+        "source": source,
+        "module": "embedded_widget",
+        "timestamp": create_timestamp()
+    }
+
+    conversations_collection.insert_one(conversation_data)
 
     return jsonify({
         "question": question,
@@ -315,7 +907,13 @@ def api_chat_message():
     user = current_user()
     role = user["role"]
 
-    answer, source = chatbot_response(question, role)
+    recent_history = list(
+        conversations_collection.find({
+            "user": user["email"]
+        }).sort("timestamp", -1).limit(3)
+    )
+
+    answer, source = chatbot_response(question, role, recent_history)
 
     conversation_data = {
         "user": user["email"],
@@ -372,17 +970,20 @@ def api_documents():
     role = user["role"]
     query = request.args.get("q", "").lower().strip()
 
-    mongo_query = {
-        "audience": role
-    }
+    mongo_query = build_document_access_query(role)
 
     if query:
-        mongo_query["$or"] = [
-            {"title": {"$regex": query, "$options": "i"}},
-            {"category": {"$regex": query, "$options": "i"}},
-            {"summary": {"$regex": query, "$options": "i"}},
-            {"type": {"$regex": query, "$options": "i"}}
-        ]
+        search_query = build_safe_document_search_query(query)
+
+        if mongo_query:
+            mongo_query = {
+                "$and": [
+                    mongo_query,
+                    search_query
+                ]
+            }
+        else:
+            mongo_query = search_query
 
     documents_data = list(documents_collection.find(mongo_query))
 
@@ -432,14 +1033,15 @@ def api_appointments():
             "time": data.get("time"),
             "notes": data.get("notes", ""),
             "status": "Pending",
-            "created_at": create_timestamp()
+            "created_at": create_timestamp(),
+            "updated_at": create_timestamp()
         }
 
         appointments_collection.insert_one(appointment_data)
         appointment_data = serialize_document(appointment_data)
 
         return jsonify({
-            "message": "Appointment request submitted successfully.",
+            "message": "Appointment request submitted successfully. Status is Pending.",
             "appointment": appointment_data
         }), 201
 
@@ -456,6 +1058,48 @@ def api_appointments():
     return jsonify(appointments_data)
 
 
+@app.route("/api/admin/appointments/<appointment_id>/status", methods=["POST"])
+def api_admin_update_appointment_status(appointment_id):
+    if not admin_required():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    status = data.get("status", "").strip()
+
+    if status not in ["Pending", "Approved", "Rejected"]:
+        return jsonify({
+            "error": "Invalid status. Use Pending, Approved, or Rejected."
+        }), 400
+
+    appointment_object_id = get_object_id_or_none(appointment_id)
+
+    if not appointment_object_id:
+        return jsonify({
+            "error": "Invalid appointment ID."
+        }), 404
+
+    result = appointments_collection.update_one(
+        {"_id": appointment_object_id},
+        {
+            "$set": {
+                "status": status,
+                "updated_at": create_timestamp(),
+                "reviewed_by": current_user()["email"]
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return jsonify({
+            "error": "Appointment request not found."
+        }), 404
+
+    return jsonify({
+        "message": "Appointment status updated successfully.",
+        "status": status
+    })
+
+
 # -----------------------------
 # ERROR HANDLERS
 # -----------------------------
@@ -463,6 +1107,13 @@ def api_appointments():
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template("404.html"), 404
+
+
+@app.errorhandler(413)
+def file_too_large(error):
+    return jsonify({
+        "error": "Uploaded file is too large. Maximum PDF size is 10 MB."
+    }), 413
 
 
 @app.errorhandler(500)

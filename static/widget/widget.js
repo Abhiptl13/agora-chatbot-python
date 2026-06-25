@@ -1,24 +1,54 @@
 /* ================================
    Agora Assistant Embedded Widget
-   Advanced Widget Script with Actions
+   Improved Widget Script with:
+   - Visible close button
+   - Dynamic action buttons
+   - Fixed service/section links
+   - Accessibility label updates
+   - Chatbot reopen after navigation
 ================================ */
 
 (function () {
+    const WIDGET_REOPEN_KEY = "agoraWidgetReopenAfterNavigation";
+
     const widgetHTML = `
-        <button class="agora-widget-button" id="agoraWidgetToggle" aria-label="Open Agora Assistant">
+        <button
+            class="agora-widget-button"
+            id="agoraWidgetToggle"
+            aria-label="Open Agora Assistant"
+            aria-expanded="false"
+            aria-controls="agoraWidget"
+        >
             💬
         </button>
 
-        <div class="agora-widget" id="agoraWidget">
+        <div
+            class="agora-widget"
+            id="agoraWidget"
+            role="dialog"
+            aria-hidden="true"
+            aria-labelledby="agoraWidgetTitle"
+        >
             <div class="agora-widget-header">
                 <div class="agora-widget-title">
-                    <strong>Agora Assistant</strong>
+                    <strong id="agoraWidgetTitle">Agora Assistant</strong>
                     <span>College support chatbot</span>
                 </div>
 
-                <div class="agora-widget-status">
-                    <span class="agora-status-dot"></span>
-                    Online
+                <div class="agora-widget-header-actions">
+                    <div class="agora-widget-status">
+                        <span class="agora-status-dot"></span>
+                        Online
+                    </div>
+
+                    <button
+                        type="button"
+                        class="agora-widget-close"
+                        id="agoraWidgetClose"
+                        aria-label="Close Agora Assistant"
+                    >
+                        ×
+                    </button>
                 </div>
             </div>
 
@@ -27,7 +57,7 @@
                     Hello! I’m Agora Assistant. I can help you with services, documents, appointments, departments, and portal navigation.
                 </div>
 
-                <div class="agora-quick-actions">
+                <div class="agora-quick-actions" id="agoraInitialQuickActions">
                     <button data-question="What services are available?">Services</button>
                     <button data-question="How can I book an appointment?">Appointments</button>
                     <button data-question="What documents can I search?">Documents</button>
@@ -63,146 +93,258 @@
     document.body.insertAdjacentHTML("beforeend", widgetHTML);
 
     const toggleButton = document.getElementById("agoraWidgetToggle");
+    const closeButton = document.getElementById("agoraWidgetClose");
     const widget = document.getElementById("agoraWidget");
     const messages = document.getElementById("agoraWidgetMessages");
     const input = document.getElementById("agoraWidgetInput");
     const sendButton = document.getElementById("agoraWidgetSend");
     const typing = document.getElementById("agoraTyping");
+    const initialQuickActions = document.getElementById("agoraInitialQuickActions");
 
     function escapeHTML(text) {
-        return String(text)
+        return String(text || "")
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");
+    }
+
+    function formatMessageText(text) {
+        return escapeHTML(text).replace(/\n/g, "<br>");
     }
 
     function scrollToBottom() {
         messages.scrollTop = messages.scrollHeight;
     }
 
+    function openWidget(focusInput = true) {
+        widget.style.display = "flex";
+        widget.classList.add("is-open");
+        widget.setAttribute("aria-hidden", "false");
+
+        toggleButton.setAttribute("aria-label", "Close Agora Assistant");
+        toggleButton.setAttribute("aria-expanded", "true");
+        toggleButton.textContent = "×";
+
+        if (focusInput) {
+            setTimeout(function () {
+                input.focus();
+            }, 100);
+        }
+
+        scrollToBottom();
+    }
+
+    function closeWidget() {
+        widget.style.display = "none";
+        widget.classList.remove("is-open");
+        widget.setAttribute("aria-hidden", "true");
+
+        toggleButton.setAttribute("aria-label", "Open Agora Assistant");
+        toggleButton.setAttribute("aria-expanded", "false");
+        toggleButton.textContent = "💬";
+    }
+
+    function toggleWidget() {
+        if (widget.style.display === "flex") {
+            closeWidget();
+        } else {
+            openWidget(true);
+        }
+    }
+
+    function removeInitialQuickActions() {
+        if (initialQuickActions) {
+            initialQuickActions.remove();
+        }
+    }
+
+    function addUniqueAction(actions, seen, label, url) {
+        const key = `${label}-${url}`;
+
+        if (!seen.has(key)) {
+            seen.add(key);
+            actions.push({
+                label: label,
+                url: url
+            });
+        }
+    }
+
     function getActionLinks(source, answer, question) {
-        const text = `${source} ${answer} ${question}`.toLowerCase();
+        const primaryText = `${question || ""} ${source || ""}`.toLowerCase();
+        const secondaryText = `${answer || ""}`.toLowerCase();
+
         const actions = [];
-
-        if (
-            text.includes("appointment") ||
-            text.includes("advisor") ||
-            text.includes("book")
-        ) {
-            actions.push({
-                label: "Open Appointment Page",
-                url: "/appointments"
-            });
-
-            actions.push({
-                label: "View Services Section",
-                url: "#services"
-            });
-        }
-
-        if (
-            text.includes("document") ||
-            text.includes("course") ||
-            text.includes("form") ||
-            text.includes("guide")
-        ) {
-            actions.push({
-                label: "Open Document Section",
-                url: "#documents"
-            });
-
-            actions.push({
-                label: "Open Full Documents Page",
-                url: "/documents"
-            });
-        }
-
-        if (
-            text.includes("department") ||
-            text.includes("computer science") ||
-            text.includes("business") ||
-            text.includes("design") ||
-            text.includes("marketing")
-        ) {
-            actions.push({
-                label: "Open Departments Section",
-                url: "#departments"
-            });
-        }
-
-        if (
-            text.includes("service") ||
-            text.includes("support") ||
-            text.includes("student affairs") ||
-            text.includes("registrar")
-        ) {
-            actions.push({
-                label: "Open Services Section",
-                url: "#services"
-            });
-        }
-
-        if (
-            text.includes("history") ||
-            text.includes("conversation")
-        ) {
-            actions.push({
-                label: "Open Conversation History",
-                url: "/history"
-            });
-        }
-
-        if (
-            text.includes("dashboard") ||
-            text.includes("profile") ||
-            text.includes("portal")
-        ) {
-            actions.push({
-                label: "Go to Portal Home",
-                url: "#home"
-            });
-        }
-
-        const uniqueActions = [];
         const seen = new Set();
 
-        actions.forEach(action => {
-            const key = `${action.label}-${action.url}`;
+        const hasAppointmentIntent =
+            primaryText.includes("appointment") ||
+            primaryText.includes("advisor") ||
+            primaryText.includes("book") ||
+            primaryText.includes("schedule meeting") ||
+            primaryText.includes("meeting") ||
+            primaryText.includes("counsellor") ||
+            primaryText.includes("counselor");
 
-            if (!seen.has(key)) {
-                seen.add(key);
-                uniqueActions.push(action);
+        const hasDocumentIntent =
+            primaryText.includes("document") ||
+            primaryText.includes("form") ||
+            primaryText.includes("guide") ||
+            primaryText.includes("course") ||
+            primaryText.includes("policy") ||
+            primaryText.includes("registration");
+
+        const hasDepartmentIntent =
+            primaryText.includes("department") ||
+            primaryText.includes("computer science") ||
+            primaryText.includes("business") ||
+            primaryText.includes("design") ||
+            primaryText.includes("marketing") ||
+            primaryText.includes("program");
+
+        const hasServiceIntent =
+            primaryText.includes("service") ||
+            primaryText.includes("support") ||
+            primaryText.includes("student affairs") ||
+            primaryText.includes("registrar") ||
+            primaryText.includes("help desk") ||
+            primaryText.includes("library");
+
+        const hasHistoryIntent =
+            primaryText.includes("history") ||
+            primaryText.includes("conversation") ||
+            primaryText.includes("previous chat");
+
+        const hasPortalIntent =
+            primaryText.includes("dashboard") ||
+            primaryText.includes("portal") ||
+            primaryText.includes("home") ||
+            primaryText.includes("website");
+
+        if (hasAppointmentIntent) {
+            addUniqueAction(actions, seen, "Open Appointment Page", "/appointments");
+        }
+
+        if (hasDocumentIntent) {
+            addUniqueAction(actions, seen, "Open Full Documents Page", "/documents");
+            addUniqueAction(actions, seen, "View Documents Section", "/demo-site#documents");
+        }
+
+        if (hasDepartmentIntent) {
+            addUniqueAction(actions, seen, "View Departments Section", "/demo-site#departments");
+        }
+
+        if (hasServiceIntent) {
+            addUniqueAction(actions, seen, "View Services Section", "/demo-site#services");
+        }
+
+        if (hasHistoryIntent) {
+            addUniqueAction(actions, seen, "Open Conversation History", "/history");
+        }
+
+        if (hasPortalIntent) {
+            addUniqueAction(actions, seen, "Go to Portal Home", "/demo-site");
+        }
+
+        /*
+          Secondary check:
+          Only use answer text if no direct intent was detected from question/source.
+          This prevents the chatbot from showing the same options every time.
+        */
+        if (actions.length === 0) {
+            if (
+                secondaryText.includes("appointment") ||
+                secondaryText.includes("advisor") ||
+                secondaryText.includes("book")
+            ) {
+                addUniqueAction(actions, seen, "Open Appointment Page", "/appointments");
+            } else if (
+                secondaryText.includes("document") ||
+                secondaryText.includes("form") ||
+                secondaryText.includes("guide")
+            ) {
+                addUniqueAction(actions, seen, "Open Full Documents Page", "/documents");
+            } else if (
+                secondaryText.includes("department")
+            ) {
+                addUniqueAction(actions, seen, "View Departments Section", "/demo-site#departments");
+            } else if (
+                secondaryText.includes("service") ||
+                secondaryText.includes("support")
+            ) {
+                addUniqueAction(actions, seen, "View Services Section", "/demo-site#services");
             }
-        });
+        }
 
-        return uniqueActions.slice(0, 3);
+        /*
+          Fallback actions only appear for general or unclear questions.
+          This avoids showing the same choices after every chatbot answer.
+        */
+        if (actions.length === 0) {
+            addUniqueAction(actions, seen, "Go to Portal Home", "/demo-site");
+            addUniqueAction(actions, seen, "Search Documents", "/documents");
+        }
+
+        return actions.slice(0, 3);
+    }
+
+    function scrollToSection(hash) {
+        const target = document.querySelector(hash);
+
+        if (target) {
+            target.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+            return true;
+        }
+
+        return false;
     }
 
     function handleActionClick(url) {
-        if (url.startsWith("#")) {
-            const target = document.querySelector(url);
-
-            if (target) {
-                target.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-            }
-
+        if (!url) {
             return;
         }
 
-        window.location.href = url;
+        /*
+          Keep chatbot open after page navigation.
+          This fixes the issue where the chatbot collapses after clicking Appointment.
+        */
+        sessionStorage.setItem(WIDGET_REOPEN_KEY, "true");
+
+        if (url.startsWith("#")) {
+            scrollToSection(url);
+            openWidget(false);
+            return;
+        }
+
+        const targetUrl = new URL(url, window.location.origin);
+        const currentPath = window.location.pathname;
+        const samePath = targetUrl.pathname === currentPath;
+
+        if (samePath && targetUrl.hash) {
+            scrollToSection(targetUrl.hash);
+            openWidget(false);
+            return;
+        }
+
+        window.location.href = targetUrl.pathname + targetUrl.hash;
     }
 
     function addMessage(text, sender, source = null, actions = []) {
         const message = document.createElement("div");
         message.className = `agora-message ${sender}`;
 
-        let content = escapeHTML(text);
+        let content = `<div class="agora-message-text">${formatMessageText(text)}</div>`;
 
         if (source) {
-            content += `<small><strong>Source:</strong> ${escapeHTML(source)}</small>`;
+            content += `
+                <small class="agora-message-source">
+                    <strong>Source:</strong> ${escapeHTML(source)}
+                </small>
+            `;
         }
 
         if (actions.length > 0) {
@@ -210,7 +352,11 @@
 
             actions.forEach(action => {
                 content += `
-                    <button class="agora-action-link" data-url="${escapeHTML(action.url)}">
+                    <button
+                        type="button"
+                        class="agora-action-link"
+                        data-url="${escapeHTML(action.url)}"
+                    >
                         ${escapeHTML(action.label)}
                     </button>
                 `;
@@ -247,6 +393,8 @@
             return;
         }
 
+        removeInitialQuickActions();
+
         addMessage(question, "user");
 
         input.value = "";
@@ -260,6 +408,7 @@
                 },
                 body: JSON.stringify({
                     question: question,
+                    message: question,
                     source: "embedded_widget"
                 })
             });
@@ -296,14 +445,22 @@
         input.focus();
     }
 
-    toggleButton.addEventListener("click", function () {
-        if (widget.style.display === "flex") {
-            widget.style.display = "none";
-        } else {
-            widget.style.display = "flex";
-            input.focus();
-            scrollToBottom();
+    function reopenWidgetIfNeeded() {
+        const shouldReopen = sessionStorage.getItem(WIDGET_REOPEN_KEY);
+
+        if (shouldReopen === "true") {
+            sessionStorage.removeItem(WIDGET_REOPEN_KEY);
+
+            setTimeout(function () {
+                openWidget(false);
+            }, 300);
         }
+    }
+
+    toggleButton.addEventListener("click", toggleWidget);
+
+    closeButton.addEventListener("click", function () {
+        closeWidget();
     });
 
     sendButton.addEventListener("click", function () {
@@ -322,4 +479,13 @@
             sendMessage(this.dataset.question);
         });
     });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && widget.style.display === "flex") {
+            closeWidget();
+        }
+    });
+
+    closeWidget();
+    reopenWidgetIfNeeded();
 })();
