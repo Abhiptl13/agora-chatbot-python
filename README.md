@@ -1,6 +1,22 @@
 # Agora Assistant Chatbot – Python Intelligent Campus Assistant
 
-A Python-based Flask web application that provides an intelligent AI-powered assistant for a College Lasalle-style intranet portal. The system supports authentication, role-based access, MongoDB Atlas cloud storage, Groq AI response generation, document search, appointment booking, conversation history, and an embedded chatbot widget inside a modern campus portal website.
+A Python-based Flask web application that provides an intelligent AI-powered assistant for a College Lasalle-style intranet portal. The system supports authentication, role-based access, MongoDB Atlas cloud storage, MongoDB GridFS PDF storage, Groq AI response generation, MongoDB Atlas Vector Search, appointment booking, document management, conversation history, and an embedded chatbot widget inside a modern campus portal website.
+
+---
+
+## Live Deployment
+
+The project is deployed on Render and can be accessed here:
+
+```text
+https://agora-chatbot-python.onrender.com
+```
+
+Login page:
+
+```text
+https://agora-chatbot-python.onrender.com/login
+```
 
 ---
 
@@ -10,14 +26,89 @@ The **Agora Assistant Chatbot** is a Python-based intelligent assistant platform
 
 This project was developed as the **Python-based equivalent version** of the main Assistant Chatbot project. It follows the same functional objectives, sprint-based development process, architecture principles, and feature requirements while being implemented using Python technologies.
 
-The platform includes a modern portal interface where users can browse services, documents, departments, appointments, and chatbot support. The embedded chatbot can answer both casual greetings and institutional questions using MongoDB-based knowledge retrieval combined with AI-generated responses.
+The platform includes a modern portal interface where users can browse services, documents, departments, appointments, and chatbot support. The embedded chatbot can answer casual greetings and institutional questions using MongoDB-based retrieval, MongoDB Atlas Vector Search, and AI-generated responses through the Groq API.
 
 ---
-## Live Deployment
 
-The project is deployed on Render and can be accessed here:
+## Screenshots
 
-https://agora-chatbot-python.onrender.com
+Screenshots are included to demonstrate the final working system.
+
+> Save your screenshots inside this folder:
+
+```text
+docs/screenshots/
+```
+
+Recommended screenshot files:
+
+```text
+docs/screenshots/login.png
+docs/screenshots/demo-portal.png
+docs/screenshots/dashboard.png
+docs/screenshots/chatbot-page.png
+docs/screenshots/chatbot-widget.png
+docs/screenshots/document-center.png
+docs/screenshots/pdf-preview.png
+docs/screenshots/appointments.png
+docs/screenshots/admin-appointments.png
+docs/screenshots/conversation-history.png
+docs/screenshots/mongodb-collections.png
+docs/screenshots/vector-search-indexes.png
+docs/screenshots/render-deployment.png
+```
+
+### Login Page
+
+![Login Page](docs/screenshots/login.png)
+
+### Demo Portal
+
+![Demo Portal](docs/screenshots/demo-portal.png)
+
+### Dashboard
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Chatbot Page
+
+![Chatbot Page](docs/screenshots/chatbot-page.png)
+
+### Embedded Chatbot Widget
+
+![Embedded Chatbot Widget](docs/screenshots/chatbot-widget.png)
+
+### Document Center
+
+![Document Center](docs/screenshots/document-center.png)
+
+### PDF Preview
+
+![PDF Preview](docs/screenshots/pdf-preview.png)
+
+### Appointment Page
+
+![Appointment Page](docs/screenshots/appointments.png)
+
+### Admin Appointment Management
+
+![Admin Appointment Management](docs/screenshots/admin-appointments.png)
+
+### Conversation History
+
+![Conversation History](docs/screenshots/conversation-history.png)
+
+### MongoDB Collections
+
+![MongoDB Collections](docs/screenshots/mongodb-collections.png)
+
+### MongoDB Atlas Vector Search Indexes
+
+![MongoDB Atlas Vector Search Indexes](docs/screenshots/vector-search-indexes.png)
+
+### Render Deployment
+
+![Render Deployment](docs/screenshots/render-deployment.png)
 
 ---
 
@@ -46,7 +137,9 @@ Implemented features:
 * Session-based authentication
 * Protected routes
 * Logout functionality
-* Role-based user information
+* Role-based access control
+* Secure password verification
+* Automatic password upgrade from plain text to hashed password when needed
 
 Supported roles:
 
@@ -64,14 +157,23 @@ Implemented capabilities:
 
 * Groq AI integration
 * Llama 3.1 Instant response generation
-* MongoDB knowledge-base retrieval
+* MongoDB Atlas Vector Search
+* MongoDB regex fallback search
+* Knowledge base retrieval
 * Website content search
-* Document search
+* Document and PDF content search
 * Department search
 * Service search
 * Source display
 * Fallback response handling
-* Basic casual conversation support
+* Casual conversation support
+* Strict guardrails to prevent hallucinated answers
+
+If the database context does not contain the answer, the chatbot is instructed to reply:
+
+```text
+I cannot find this information in the database.
+```
 
 Example casual questions:
 
@@ -90,14 +192,157 @@ Example portal questions:
 ```text
 How can I book an appointment?
 What documents are available?
-What services are available?
-What departments are available?
+Which courses are offered?
+How can students register for courses?
 Where can I get student support?
+What services are available?
 ```
 
 ---
 
-### Embedded Chatbot Widget
+## MongoDB Atlas Vector Search
+
+MongoDB Atlas Vector Search is implemented for semantic chatbot retrieval.
+
+Vector Search is enabled on:
+
+```text
+knowledge_base
+documents
+website_content
+```
+
+The system uses the SentenceTransformers model:
+
+```text
+all-MiniLM-L6-v2
+```
+
+Embedding dimensions:
+
+```text
+384
+```
+
+Vector Search index name:
+
+```text
+vector_index
+```
+
+Vector Search index JSON:
+
+```json
+{
+  "fields": [
+    {
+      "type": "vector",
+      "path": "embedding",
+      "numDimensions": 384,
+      "similarity": "cosine"
+    }
+  ]
+}
+```
+
+The chatbot search order is:
+
+```text
+1. MongoDB Atlas Vector Search
+2. MongoDB regex fallback search
+3. Groq AI response generation using only retrieved database context
+```
+
+This improves semantic retrieval and allows the chatbot to understand meaning, not only exact keywords.
+
+---
+
+## Chatbot Retrieval Fixes
+
+Several important chatbot retrieval issues were fixed during development.
+
+### 1. Inverted Search Logic
+
+Old issue:
+
+```text
+The chatbot checked whether a full document title existed inside the short user question.
+```
+
+Fix:
+
+```text
+The question is now tokenized, and meaningful words are compared against searchable database fields.
+```
+
+---
+
+### 2. Naive Non-Tokenized Scoring
+
+Old issue:
+
+```text
+Raw string matching caused poor results when the user used different wording.
+```
+
+Fix:
+
+```text
+Tokenized scoring, stop-word filtering, plural handling, and weighted field scoring were added.
+```
+
+---
+
+### 3. Brute Force Database Scanning
+
+Old issue:
+
+```text
+The chatbot loaded entire MongoDB collections into memory for every message request.
+```
+
+Fix:
+
+```text
+MongoDB-side filtering and Vector Search are now used to reduce unnecessary memory usage.
+```
+
+---
+
+### 4. Context Field Mismatch
+
+Old issue:
+
+```text
+The chatbot expected only the answer field, but imported records often used text, summary, content, description, or content_text.
+```
+
+Fix:
+
+```text
+The chatbot now checks multiple fields:
+answer, text, summary, content, description, and content_text.
+```
+
+---
+
+### 5. LLM Guardrails
+
+Old issue:
+
+```text
+The AI could generate unsupported answers when the retrieved context was empty.
+```
+
+Fix:
+
+```text
+The Groq prompt now strictly tells the model to use only database context and not guess.
+```
+
+---
+
+## Embedded Chatbot Widget
 
 The project includes a floating chatbot widget inside the demo portal website.
 
@@ -112,18 +357,37 @@ Widget features:
 
 ---
 
-### Document Library
+## Document Center and PDF Storage
 
-The document library allows users to view and search institutional resources.
+The document center allows users to view, search, preview, and download institutional resources.
 
 Implemented features:
 
 * Role-based document visibility
-* Search by title, category, type, and summary
+* Search by title, category, type, summary, file name, and extracted PDF text
 * Document cards
 * Category sidebar
 * MongoDB-powered document retrieval
-* Improved responsive layout
+* PDF upload for teachers and administrators
+* PDF preview
+* PDF download
+* PDF text extraction using `pypdf`
+* PDF storage using MongoDB GridFS
+* Vector embedding generation for uploaded documents
+* Orphan GridFS cleanup if document metadata insertion fails
+
+PDF metadata is stored in:
+
+```text
+documents
+```
+
+PDF file bytes are stored in:
+
+```text
+document_files.files
+document_files.chunks
+```
 
 Document examples:
 
@@ -136,7 +400,7 @@ Document examples:
 
 ---
 
-### Appointment Management
+## Appointment Management
 
 The appointment module allows users to submit appointment requests.
 
@@ -149,6 +413,9 @@ Implemented features:
 * Time selection
 * Notes field
 * MongoDB appointment storage
+* Pending appointment status
+* Admin appointment review
+* Admin approval or rejection workflow
 
 Supported appointment types:
 
@@ -158,19 +425,29 @@ Supported appointment types:
 * Program consultation
 * Technical support
 
+Important note:
+
+```text
+The application saves appointment requests as Pending. Email confirmation is not currently implemented.
+```
+
+The chatbot is instructed not to promise email notifications or automatic confirmations.
+
 ---
 
-### Conversation History
+## Conversation History
 
 The platform stores user chatbot interactions in MongoDB Atlas.
 
 Stored information:
 
 * User name
+* User email
 * User role
 * Question
 * AI response
 * Source
+* Module
 * Timestamp
 
 Benefits:
@@ -195,6 +472,8 @@ POST /api/widget/message
 GET  /api/chat/history
 GET  /api/documents
 GET  /api/appointments
+POST /api/appointments
+POST /api/admin/appointments/<appointment_id>/status
 ```
 
 ---
@@ -212,20 +491,27 @@ GET  /api/appointments
 
 * Python
 * Flask
+* Werkzeug Security
+* pypdf
 
-### Database
+### Database and Storage
 
 * MongoDB Atlas
 * PyMongo
+* MongoDB GridFS
 
-### Artificial Intelligence
+### Artificial Intelligence and Search
 
 * Groq API
 * Llama 3.1 Instant model
+* SentenceTransformers
+* all-MiniLM-L6-v2
+* MongoDB Atlas Vector Search
+* MongoDB regex fallback search
 
 ### Deployment
 
-* Render Free Plan
+* Render
 * Gunicorn
 * GitHub
 
@@ -253,7 +539,9 @@ Portal / Dashboard / Chatbot Pages
 ↓
 Chatbot Service Layer
 ↓
-MongoDB Atlas Retrieval
+MongoDB Atlas Vector Search
+↓
+MongoDB Regex Fallback
 ↓
 Groq AI Response Generation
 ↓
@@ -271,13 +559,17 @@ User Question
 ↓
 Casual Conversation Check
 ↓
-MongoDB Search
+Question Tokenization
+↓
+Vector Search on MongoDB Atlas
+↓
+Regex Fallback Search
 ↓
 Role-Based Filtering
 ↓
 Relevant Context Selection
 ↓
-Groq AI Prompt Processing
+Strict Groq Prompt Processing
 ↓
 AI Response Generation
 ↓
@@ -286,7 +578,7 @@ Source Returned
 Conversation Saved
 ```
 
-The chatbot first checks whether the message is a basic casual message such as "hi", "hello", "how are you", or "thanks". If not, it searches MongoDB collections for relevant institutional information and generates an answer using Groq AI.
+The chatbot first checks whether the message is a basic casual message such as `hi`, `hello`, `how are you`, or `thanks`. If not, it searches MongoDB collections for relevant institutional information and generates an answer using Groq AI.
 
 ---
 
@@ -309,18 +601,30 @@ conversations
 website_content
 portal_services
 portal_departments
+document_files.files
+document_files.chunks
 ```
 
-| Collection           | Purpose                                      |
-| -------------------- | -------------------------------------------- |
-| `users`              | Stores user accounts, roles, and departments |
-| `knowledge_base`     | Stores chatbot knowledge records             |
-| `documents`          | Stores document metadata                     |
-| `appointments`       | Stores appointment requests                  |
-| `conversations`      | Stores chatbot interaction history           |
-| `website_content`    | Stores portal page information               |
-| `portal_services`    | Stores service information                   |
-| `portal_departments` | Stores department information                |
+| Collection              | Purpose                                                      |
+| ----------------------- | ------------------------------------------------------------ |
+| `users`                 | Stores user accounts, roles, departments, and passwords      |
+| `knowledge_base`        | Stores chatbot knowledge records                             |
+| `documents`             | Stores document metadata, extracted PDF text, and embeddings |
+| `appointments`          | Stores appointment requests                                  |
+| `conversations`         | Stores chatbot interaction history                           |
+| `website_content`       | Stores portal page information                               |
+| `portal_services`       | Stores service information                                   |
+| `portal_departments`    | Stores department information                                |
+| `document_files.files`  | Stores GridFS PDF file metadata                              |
+| `document_files.chunks` | Stores GridFS PDF file chunks                                |
+
+Vector Search indexes are created on:
+
+```text
+knowledge_base
+documents
+website_content
+```
 
 ---
 
@@ -336,10 +640,17 @@ agora_chatbot_python/
 ├── runtime.txt
 ├── .env.example
 ├── .gitignore
+├── README.md
 │
 ├── services/
 │   ├── ai_service.py
-│   └── chatbot_service.py
+│   ├── chatbot_service.py
+│   └── vector_embedding_service.py
+│
+├── scripts/
+│   ├── backfill_embeddings.py
+│   ├── check_embeddings.py
+│   └── test_vector_search.py
 │
 ├── templates/
 │   ├── base.html
@@ -349,6 +660,7 @@ agora_chatbot_python/
 │   ├── chat.html
 │   ├── documents.html
 │   ├── appointments.html
+│   ├── admin_appointments.html
 │   ├── history.html
 │   ├── 404.html
 │   └── 500.html
@@ -359,9 +671,21 @@ agora_chatbot_python/
 │       ├── widget.css
 │       └── widget.js
 │
-├── docs/
-│
-└── data/
+└── docs/
+    └── screenshots/
+        ├── login.png
+        ├── demo-portal.png
+        ├── dashboard.png
+        ├── chatbot-page.png
+        ├── chatbot-widget.png
+        ├── document-center.png
+        ├── pdf-preview.png
+        ├── appointments.png
+        ├── admin-appointments.png
+        ├── conversation-history.png
+        ├── mongodb-collections.png
+        ├── vector-search-indexes.png
+        └── render-deployment.png
 ```
 
 ---
@@ -438,6 +762,26 @@ Completed:
 
 ---
 
+### Final Enhancement – Retrieval Optimization and Vector Search
+
+Completed:
+
+* Fixed inverted chatbot search logic
+* Added tokenized scoring
+* Added MongoDB regex filtering
+* Removed inefficient full collection scan from chatbot search
+* Added multi-field context extraction
+* Added strict Groq guardrails
+* Added MongoDB GridFS PDF storage
+* Added PDF text extraction
+* Added embedding generation
+* Added embedding backfill script
+* Added MongoDB Atlas Vector Search indexes
+* Integrated Vector Search into chatbot response flow
+* Added regex fallback for reliability
+
+---
+
 ## Installation Guide
 
 ### 1. Clone the Repository
@@ -494,8 +838,11 @@ Add the following values:
 
 ```env
 MONGO_URI=your_mongodb_atlas_connection_string
+MONGO_DB_NAME=agora_chatbot_db
 GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.1-8b-instant
 SECRET_KEY=your_secret_key
+FLASK_DEBUG=0
 ```
 
 Important:
@@ -522,14 +869,15 @@ http://127.0.0.1:5000
 
 ## Environment Variables
 
-The project uses environment variables to protect sensitive credentials.
-
 Required variables:
 
 ```env
 MONGO_URI=your_mongodb_connection_string
+MONGO_DB_NAME=agora_chatbot_db
 GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.1-8b-instant
 SECRET_KEY=your_secret_key
+FLASK_DEBUG=0
 ```
 
 Recommended public example file:
@@ -542,22 +890,11 @@ Example `.env.example` content:
 
 ```env
 MONGO_URI=your_mongodb_atlas_connection_string
+MONGO_DB_NAME=agora_chatbot_db
 GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.1-8b-instant
 SECRET_KEY=your_secret_key
-```
-
----
-
-## Deployment Preparation
-
-Before deploying, make sure these files exist in the project root:
-
-```text
-requirements.txt
-Procfile
-runtime.txt
-.gitignore
-.env.example
+FLASK_DEBUG=0
 ```
 
 ---
@@ -572,6 +909,8 @@ pymongo
 python-dotenv
 groq
 gunicorn
+pypdf
+sentence-transformers
 ```
 
 ---
@@ -648,8 +987,11 @@ Plan: Free
 
 ```text
 MONGO_URI
+MONGO_DB_NAME
 GROQ_API_KEY
+GROQ_MODEL
 SECRET_KEY
+FLASK_DEBUG
 ```
 
 8. Deploy the application.
@@ -672,6 +1014,91 @@ For production, restrict access to trusted IP addresses only.
 
 ---
 
+## MongoDB Atlas Vector Search Setup
+
+Create a Vector Search index named:
+
+```text
+vector_index
+```
+
+Create it on these collections:
+
+```text
+knowledge_base
+documents
+website_content
+```
+
+Use this JSON:
+
+```json
+{
+  "fields": [
+    {
+      "type": "vector",
+      "path": "embedding",
+      "numDimensions": 384,
+      "similarity": "cosine"
+    }
+  ]
+}
+```
+
+After creating the indexes, wait until each index status shows:
+
+```text
+READY
+```
+
+or:
+
+```text
+ACTIVE
+```
+
+---
+
+## Embedding Scripts
+
+### Backfill Existing Records
+
+Run:
+
+```bash
+python scripts/backfill_embeddings.py
+```
+
+This adds embeddings to existing MongoDB records.
+
+### Check Embeddings
+
+Run:
+
+```bash
+python scripts/check_embeddings.py
+```
+
+This verifies how many records have embeddings.
+
+### Test Vector Search
+
+Run:
+
+```bash
+python scripts/test_vector_search.py
+```
+
+Example successful result:
+
+```text
+Testing Vector Search on: knowledge_base
+Title: Course Registration
+Score: 0.7449570894241333
+```
+
+---
+
 ## API Examples
 
 ### Health Check
@@ -685,7 +1112,11 @@ Expected response:
 ```json
 {
   "status": "running",
-  "project": "Agora Assistant Chatbot - Python Version"
+  "project": "Agora Assistant Chatbot - Python Version",
+  "database": "MongoDB Atlas",
+  "file_storage": "MongoDB GridFS",
+  "ai_provider": "Groq API",
+  "vector_search_ready": true
 }
 ```
 
@@ -701,7 +1132,7 @@ Example body:
 
 ```json
 {
-  "message": "How can I book an appointment?"
+  "message": "Which courses are offered?"
 }
 ```
 
@@ -709,8 +1140,10 @@ Expected response:
 
 ```json
 {
-  "answer": "You can book an appointment through the Appointment Services page.",
-  "source": "Appointment Services"
+  "question": "Which courses are offered?",
+  "answer": "Students can complete course registration through the Agora intranet registration section.",
+  "source": "Course Registration",
+  "matched": true
 }
 ```
 
@@ -726,7 +1159,7 @@ Example body:
 
 ```json
 {
-  "message": "What documents are available?"
+  "message": "How can I book an appointment?"
 }
 ```
 
@@ -734,8 +1167,11 @@ Expected response:
 
 ```json
 {
-  "answer": "You can search academic documents, forms, guides, and support resources through the Document Center.",
-  "source": "Document Center"
+  "question": "How can I book an appointment?",
+  "answer": "You can book an appointment through the appointment page.",
+  "source": "Academic Advisor Booking Guide",
+  "matched": true,
+  "module": "embedded_widget"
 }
 ```
 
@@ -752,18 +1188,30 @@ Demo portal opens correctly
 Embedded chatbot opens
 Chatbot answers casual messages
 Chatbot answers institutional questions
+Chatbot uses Vector Search results
+Chatbot fallback works
 Chatbot action buttons work
 Dashboard opens
 Documents page layout works
 Document search works
+PDF upload works
+PDF preview works
+PDF download works
 Appointment page works
 Appointment form submits
+Admin appointment page opens
+Admin can approve appointment
+Admin can reject appointment
 History page displays conversations
 404 page works
 500 page exists
 API health endpoint works
 MongoDB connection works
+GridFS file storage works
 Groq AI response works
+Vector Search indexes are READY
+Render deployment works
+Screenshots are added to docs/screenshots
 ```
 
 ---
@@ -779,15 +1227,20 @@ Implemented security features:
 * MongoDB Atlas authentication
 * API keys stored outside source code
 * `.env` excluded from GitHub
+* Password hashing with Werkzeug
+* Automatic password upgrade for old plain-text demo passwords
 * Custom error pages
+* File upload restricted to PDFs
+* Maximum upload size limit
+* Secure filename handling
 
 Future security improvements:
 
-* Password hashing
-* JWT authentication
+* CSRF protection
 * Multi-factor authentication
 * Audit logs
 * More advanced role permissions
+* Stronger PDF content validation
 
 ---
 
@@ -795,12 +1248,13 @@ Future security improvements:
 
 Current limitations:
 
-* Password handling is basic for demonstration purposes
-* Appointment approval workflow is not fully automated
-* Document files are represented mainly as metadata
-* Chatbot uses keyword scoring instead of vector search
-* Admin analytics dashboard is not fully implemented
-* Free Render deployment may sleep after inactivity
+* Email confirmations for appointments are not implemented.
+* Public self-registration is not enabled.
+* Admin-created or seeded accounts are required.
+* Free Render deployment may sleep after inactivity.
+* MongoDB Atlas M0 free cluster has Search/Vector index limits.
+* Some collections may use regex fallback if Vector Search index slots are unavailable.
+* Scanned image-only PDFs may not be searchable unless OCR is added in the future.
 
 ---
 
@@ -808,47 +1262,16 @@ Current limitations:
 
 Planned improvements:
 
-* Password hashing with Werkzeug
-* Admin dashboard
-* Appointment approval workflow
-* Email notifications
-* File upload support
-* Semantic search
-* Vector database integration
-* Multi-turn chatbot memory
+* Email notifications for appointments
+* OCR for scanned PDFs
+* Admin user-management page
+* CSRF protection
+* Audit logs
+* Advanced analytics dashboard
 * Multilingual chatbot support
-* Analytics dashboard
-* Improved AI prompt engineering
 * User profile management
-
----
-
-## Screenshots
-
-Add screenshots after final testing.
-
-Recommended screenshots:
-
-```text
-Login Page
-Demo Portal
-Embedded Chatbot
-Dashboard
-Chatbot Page
-Document Center
-Appointment Page
-Conversation History
-MongoDB Collections
-Render Deployment
-```
-
-Example format:
-
-```markdown
-![Login Page](docs/screenshots/login.png)
-![Demo Portal](docs/screenshots/demo_portal.png)
-![Chatbot Widget](docs/screenshots/chatbot_widget.png)
-```
+* Vector Search indexes for all searchable collections after MongoDB upgrade
+* More advanced AI prompt monitoring and evaluation
 
 ---
 
@@ -857,8 +1280,10 @@ Example format:
 ```text
 Development: Completed
 Testing: Completed
-Deployment Preparation: In Progress
-Final Deployment: Pending
+Vector Search: Completed
+PDF Upload and GridFS Storage: Completed
+Render Deployment: Completed
+Final Documentation: Completed
 ```
 
 ---
@@ -870,12 +1295,13 @@ Abhi Ketankumar Patel
 Student ID: 2431401
 Internship Project – LCI LX Studio Inc.
 Python-Based Equivalent Version
+College Lasalle – AI and ML Internship Project
 ```
 
 ---
 
 ## Conclusion
 
-The Agora Assistant Chatbot demonstrates a complete Python-based intelligent assistant platform for a College Lasalle-style intranet environment. The project combines Flask backend development, MongoDB Atlas cloud storage, Groq AI response generation, role-based access, document search, appointment management, embedded chatbot functionality, and professional user interface design.
+The Agora Assistant Chatbot demonstrates a complete Python-based intelligent assistant platform for a College Lasalle-style intranet environment. The project combines Flask backend development, MongoDB Atlas cloud storage, MongoDB GridFS PDF storage, Groq AI response generation, MongoDB Atlas Vector Search, role-based access, document search, appointment management, embedded chatbot functionality, and professional user interface design.
 
-The final system provides a strong foundation for a realistic institutional assistant and can be expanded in the future with stronger authentication, semantic search, multilingual support, analytics, and advanced administrative features.
+The final system provides a strong foundation for a realistic institutional assistant and can be expanded in the future with email notifications, OCR, multilingual support, analytics, and advanced administrative features.

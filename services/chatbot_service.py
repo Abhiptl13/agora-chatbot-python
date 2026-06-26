@@ -1,7 +1,6 @@
 import re
 
 from services.ai_service import generate_ai_response
-
 from services.vector_embedding_service import run_vector_search
 
 from mongo_db import (
@@ -37,7 +36,7 @@ MAX_RESULTS_PER_COLLECTION = 25
 MIN_RELEVANCE_SCORE = 4
 
 VECTOR_SEARCH_LIMIT = 5
-VECTOR_MIN_SCORE = 0.55
+VECTOR_MIN_SCORE = 0.05
 VECTOR_SCORE_MULTIPLIER = 100
 
 
@@ -104,11 +103,7 @@ def tokenize(text):
 def get_stable_search_tokens(tokens):
     """
     Converts a set of tokens into a stable search order.
-
-    Why:
-    Python sets do not keep reliable order.
-    If we use list(tokens), MongoDB may search different tokens first on different runs.
-    Sorting by longer words first improves search quality because longer words are usually more meaningful.
+    Longer words are searched first because they are usually more meaningful.
     """
 
     return sorted(
@@ -323,7 +318,7 @@ def find_candidates(collection, tokens, fields, role=None):
 
 
 # -----------------------------
-# VECTOR SEARCH HELPERS
+# LIGHTWEIGHT SEARCH HELPERS
 # -----------------------------
 
 def get_vector_score(item):
@@ -539,7 +534,7 @@ def build_result(
 
 
 # -----------------------------
-# VECTOR COLLECTION SEARCH FUNCTIONS
+# LIGHTWEIGHT COLLECTION SEARCH FUNCTIONS
 # -----------------------------
 
 def vector_search_knowledge_base(question, role):
@@ -575,7 +570,7 @@ def vector_search_knowledge_base(question, role):
                 content=content,
                 source=item.get("title", "Knowledge Base"),
                 result_type="Knowledge Base",
-                search_method="MongoDB Atlas Vector Search",
+                search_method="Lightweight Text Search",
                 vector_score=vector_score
             )
         )
@@ -633,7 +628,7 @@ def vector_search_documents(question, role):
                 content=truncate_text(content, 3000),
                 source=item.get("title", "Document Center"),
                 result_type="Document",
-                search_method="MongoDB Atlas Vector Search",
+                search_method="Lightweight Text Search",
                 vector_score=vector_score
             )
         )
@@ -670,7 +665,7 @@ def vector_search_website_content(question):
                 content=content,
                 source=item.get("source", "Portal Website"),
                 result_type="Website Content",
-                search_method="MongoDB Atlas Vector Search",
+                search_method="Lightweight Text Search",
                 vector_score=vector_score
             )
         )
@@ -1210,7 +1205,7 @@ def chatbot_response(question, role, recent_history=None):
 
     all_results = []
 
-    # Vector Search first
+    # Lightweight text search first
     all_results.extend(vector_search_knowledge_base(question, role))
     all_results.extend(vector_search_documents(question, role))
     all_results.extend(vector_search_website_content(question))

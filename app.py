@@ -29,12 +29,7 @@ from mongo_db import (
 )
 
 from services.chatbot_service import chatbot_response
-
-from services.vector_embedding_service import (
-    create_text_embedding,
-    build_embedding_text,
-    EMBEDDING_DIMENSIONS
-)
+from services.vector_embedding_service import build_embedding_text
 
 
 # -----------------------------
@@ -283,7 +278,8 @@ def build_safe_document_search_query(query):
             {"summary": {"$regex": safe_query, "$options": "i"}},
             {"type": {"$regex": safe_query, "$options": "i"}},
             {"original_file_name": {"$regex": safe_query, "$options": "i"}},
-            {"content_text": {"$regex": safe_query, "$options": "i"}}
+            {"content_text": {"$regex": safe_query, "$options": "i"}},
+            {"search_text": {"$regex": safe_query, "$options": "i"}}
         ]
     }
 
@@ -526,19 +522,18 @@ def documents():
                                 "content_text_available": bool(pdf_text)
                             }
 
-                            embedding_text = build_embedding_text(document_data)
+                            search_text = build_embedding_text(document_data)
 
-                            document_data["embedding"] = create_text_embedding(embedding_text)
-                            document_data["embedding_model"] = "all-MiniLM-L6-v2"
-                            document_data["embedding_dimensions"] = EMBEDDING_DIMENSIONS
-                            document_data["embedding_created_at"] = create_timestamp()
+                            document_data["search_text"] = search_text
+                            document_data["search_method"] = "Lightweight Text Search"
+                            document_data["search_index_created_at"] = create_timestamp()
 
                             documents_collection.insert_one(document_data)
 
                             if pdf_text:
-                                success = "PDF document uploaded successfully to MongoDB, text was extracted, and embedding was created for vector search."
+                                success = "PDF document uploaded successfully to MongoDB. Text was extracted and lightweight search indexing was prepared."
                             else:
-                                success = "PDF document uploaded successfully to MongoDB with vector embedding. Text could not be extracted, but preview and download are available."
+                                success = "PDF document uploaded successfully to MongoDB. Text could not be extracted, but preview and download are available."
 
                     except Exception:
                         if gridfs_file_id:
@@ -846,9 +841,10 @@ def health():
         "database": "MongoDB Atlas",
         "file_storage": "MongoDB GridFS",
         "ai_provider": "Groq API",
-        "vector_search_ready": True,
-        "embedding_model": "all-MiniLM-L6-v2",
-        "embedding_dimensions": EMBEDDING_DIMENSIONS
+        "vector_search_ready": False,
+        "search_method": "Lightweight Text Search",
+        "embedding_model": "Disabled for free deployment",
+        "embedding_dimensions": 0
     })
 
 
