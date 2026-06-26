@@ -94,29 +94,6 @@ This approach improves reliability and reduces unsupported AI-generated answers.
 
 Screenshots are included to demonstrate the final working system.
 
-Create this folder:
-
-```text
-docs/screenshots/
-```
-
-Use these exact file names so the screenshots load properly on GitHub:
-
-```text
-docs/screenshots/login.png
-docs/screenshots/demo-portal.png
-docs/screenshots/dashboard.png
-docs/screenshots/chatbot-page.png
-docs/screenshots/chatbot-widget.png
-docs/screenshots/document-center.png
-docs/screenshots/pdf-preview.png
-docs/screenshots/appointments.png
-docs/screenshots/admin-appointments.png
-docs/screenshots/conversation-history.png
-docs/screenshots/mongodb-collections.png
-docs/screenshots/render-deployment.png
-```
-
 ### Login Page
 
 ![Login Page](docs/screenshots/login.png)
