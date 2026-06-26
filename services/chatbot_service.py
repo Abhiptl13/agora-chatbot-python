@@ -2,6 +2,8 @@ import re
 
 from services.ai_service import generate_ai_response
 
+from services.vector_embedding_service import run_vector_search
+
 from mongo_db import (
     knowledge_collection,
     documents_collection,
@@ -31,8 +33,12 @@ SHORT_ALLOWED_TOKENS = {
 }
 
 MAX_SEARCH_TOKENS = 10
-MAX_RESULTS_PER_COLLECTION = 10
+MAX_RESULTS_PER_COLLECTION = 25
 MIN_RELEVANCE_SCORE = 4
+
+VECTOR_SEARCH_LIMIT = 5
+VECTOR_MIN_SCORE = 0.55
+VECTOR_SCORE_MULTIPLIER = 100
 
 
 # -----------------------------
@@ -93,6 +99,22 @@ def tokenize(text):
         tokens.update(expand_token(token))
 
     return tokens
+
+
+def get_stable_search_tokens(tokens):
+    """
+    Converts a set of tokens into a stable search order.
+
+    Why:
+    Python sets do not keep reliable order.
+    If we use list(tokens), MongoDB may search different tokens first on different runs.
+    Sorting by longer words first improves search quality because longer words are usually more meaningful.
+    """
+
+    return sorted(
+        tokens,
+        key=lambda token: (-len(token), token)
+    )[:MAX_SEARCH_TOKENS]
 
 
 def truncate_text(text, limit=1800):
@@ -237,13 +259,13 @@ def build_role_filter(role):
 
 
 # -----------------------------
-# MONGODB SEARCH HELPERS
+# MONGODB REGEX SEARCH HELPERS
 # -----------------------------
 
 def build_regex_filter(tokens, fields):
     regex_conditions = []
 
-    search_tokens = list(tokens)[:MAX_SEARCH_TOKENS]
+    search_tokens = get_stable_search_tokens(tokens)
 
     for token in search_tokens:
         safe_token = re.escape(token)
@@ -298,6 +320,71 @@ def find_candidates(collection, tokens, fields, role=None):
         )
     except Exception:
         return []
+
+
+# -----------------------------
+# VECTOR SEARCH HELPERS
+# -----------------------------
+
+def get_vector_score(item):
+    try:
+        return float(item.get("vector_score", 0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def convert_vector_score_to_relevance_score(vector_score):
+    return int(vector_score * VECTOR_SCORE_MULTIPLIER)
+
+
+def get_vector_role_filter(role):
+    role_filter = build_role_filter(role)
+
+    if not role_filter:
+        return None
+
+    return role_filter
+
+
+def find_vector_candidates(collection, question, role=None):
+    role_filter = None
+
+    if role is not None:
+        role_filter = get_vector_role_filter(role)
+
+    return run_vector_search(
+        collection=collection,
+        query_text=question,
+        role_filter=role_filter,
+        limit=VECTOR_SEARCH_LIMIT
+    )
+
+
+def get_result_dedup_key(result):
+    return (
+        f"{result.get('type', '')}|"
+        f"{result.get('title', '')}|"
+        f"{result.get('source', '')}"
+    ).lower()
+
+
+def deduplicate_results(results):
+    unique_results = {}
+
+    for result in results:
+        key = get_result_dedup_key(result)
+
+        if key not in unique_results:
+            unique_results[key] = result
+            continue
+
+        existing_score = unique_results[key].get("score", 0)
+        new_score = result.get("score", 0)
+
+        if new_score > existing_score:
+            unique_results[key] = result
+
+    return list(unique_results.values())
 
 
 # -----------------------------
@@ -423,22 +510,176 @@ def get_action_metadata(result_type, title, source):
     }
 
 
-def build_result(score, title, content, source, result_type):
+def build_result(
+    score,
+    title,
+    content,
+    source,
+    result_type,
+    search_method="Regex Search",
+    vector_score=None
+):
     action = get_action_metadata(result_type, title, source)
 
-    return {
+    result = {
         "score": score,
         "title": title,
         "content": content,
         "source": source,
         "type": result_type,
         "action_label": action["label"],
-        "action_url": action["url"]
+        "action_url": action["url"],
+        "search_method": search_method
     }
+
+    if vector_score is not None:
+        result["vector_score"] = vector_score
+
+    return result
 
 
 # -----------------------------
-# COLLECTION SEARCH FUNCTIONS
+# VECTOR COLLECTION SEARCH FUNCTIONS
+# -----------------------------
+
+def vector_search_knowledge_base(question, role):
+    results = []
+
+    candidates = find_vector_candidates(
+        knowledge_collection,
+        question,
+        role
+    )
+
+    for item in candidates:
+        if not role_can_access(role, item.get("audience", [])):
+            continue
+
+        vector_score = get_vector_score(item)
+
+        if vector_score < VECTOR_MIN_SCORE:
+            continue
+
+        content = extract_first_available_content(
+            item,
+            ["answer", "text", "summary", "content", "description"]
+        )
+
+        if not content:
+            continue
+
+        results.append(
+            build_result(
+                score=convert_vector_score_to_relevance_score(vector_score),
+                title=item.get("title", "Knowledge Base"),
+                content=content,
+                source=item.get("title", "Knowledge Base"),
+                result_type="Knowledge Base",
+                search_method="MongoDB Atlas Vector Search",
+                vector_score=vector_score
+            )
+        )
+
+    return results
+
+
+def vector_search_documents(question, role):
+    results = []
+
+    candidates = find_vector_candidates(
+        documents_collection,
+        question,
+        role
+    )
+
+    for item in candidates:
+        if not role_can_access(role, item.get("audience", [])):
+            continue
+
+        vector_score = get_vector_score(item)
+
+        if vector_score < VECTOR_MIN_SCORE:
+            continue
+
+        content = item.get("summary", "")
+
+        pdf_text = item.get("content_text", "")
+
+        if pdf_text:
+            relevant_pdf_text = extract_relevant_pdf_snippet(
+                question,
+                pdf_text,
+                max_chars=2500
+            )
+
+            if relevant_pdf_text:
+                content += f"\n\nRelevant Extracted PDF Content:\n{relevant_pdf_text}"
+
+        content = content.strip()
+
+        if item.get("file_url"):
+            content += f"\n\nPreview Link: {item.get('file_url')}."
+
+        if item.get("download_url"):
+            content += f"\nDownload Link: {item.get('download_url')}."
+
+        if not content:
+            continue
+
+        results.append(
+            build_result(
+                score=convert_vector_score_to_relevance_score(vector_score),
+                title=item.get("title", "Document"),
+                content=truncate_text(content, 3000),
+                source=item.get("title", "Document Center"),
+                result_type="Document",
+                search_method="MongoDB Atlas Vector Search",
+                vector_score=vector_score
+            )
+        )
+
+    return results
+
+
+def vector_search_website_content(question):
+    results = []
+
+    candidates = find_vector_candidates(
+        website_content_collection,
+        question
+    )
+
+    for item in candidates:
+        vector_score = get_vector_score(item)
+
+        if vector_score < VECTOR_MIN_SCORE:
+            continue
+
+        content = extract_first_available_content(
+            item,
+            ["content", "summary", "text", "description"]
+        )
+
+        if not content:
+            continue
+
+        results.append(
+            build_result(
+                score=convert_vector_score_to_relevance_score(vector_score),
+                title=item.get("title", "Website Content"),
+                content=content,
+                source=item.get("source", "Portal Website"),
+                result_type="Website Content",
+                search_method="MongoDB Atlas Vector Search",
+                vector_score=vector_score
+            )
+        )
+
+    return results
+
+
+# -----------------------------
+# REGEX COLLECTION SEARCH FUNCTIONS
 # -----------------------------
 
 def search_knowledge_base(question, role):
@@ -497,7 +738,8 @@ def search_knowledge_base(question, role):
                     title=item.get("title", "Knowledge Base"),
                     content=content,
                     source=item.get("title", "Knowledge Base"),
-                    result_type="Knowledge Base"
+                    result_type="Knowledge Base",
+                    search_method="MongoDB Regex Fallback"
                 )
             )
 
@@ -581,7 +823,8 @@ def search_documents(question, role):
                     title=item.get("title", "Document"),
                     content=truncate_text(content, 3000),
                     source=item.get("title", "Document Center"),
-                    result_type="Document"
+                    result_type="Document",
+                    search_method="MongoDB Regex Fallback"
                 )
             )
 
@@ -638,7 +881,8 @@ def search_website_content(question):
                     title=item.get("title", "Website Content"),
                     content=content,
                     source=item.get("source", "Portal Website"),
-                    result_type="Website Content"
+                    result_type="Website Content",
+                    search_method="MongoDB Regex Fallback"
                 )
             )
 
@@ -693,7 +937,8 @@ def search_portal_services(question):
                     title=item.get("title", "Portal Service"),
                     content=content,
                     source=item.get("source", "Portal Service"),
-                    result_type="Portal Service"
+                    result_type="Portal Service",
+                    search_method="MongoDB Regex Fallback"
                 )
             )
 
@@ -748,7 +993,8 @@ def search_portal_departments(question):
                     title=item.get("title", "Portal Department"),
                     content=content,
                     source=item.get("source", "Portal Department"),
-                    result_type="Portal Department"
+                    result_type="Portal Department",
+                    search_method="MongoDB Regex Fallback"
                 )
             )
 
@@ -964,11 +1210,19 @@ def chatbot_response(question, role, recent_history=None):
 
     all_results = []
 
+    # Vector Search first
+    all_results.extend(vector_search_knowledge_base(question, role))
+    all_results.extend(vector_search_documents(question, role))
+    all_results.extend(vector_search_website_content(question))
+
+    # Regex fallback second
     all_results.extend(search_knowledge_base(question, role))
     all_results.extend(search_documents(question, role))
     all_results.extend(search_website_content(question))
     all_results.extend(search_portal_services(question))
     all_results.extend(search_portal_departments(question))
+
+    all_results = deduplicate_results(all_results)
 
     memory_context = format_conversation_memory(recent_history)
 
@@ -1000,15 +1254,22 @@ def chatbot_response(question, role, recent_history=None):
     context_parts = []
 
     for result in top_results:
+        vector_score_text = ""
+
+        if result.get("vector_score") is not None:
+            vector_score_text = f"Vector Score: {result.get('vector_score')}"
+
         context_parts.append(
             f"""
 Source Type: {result["type"]}
 Title: {result["title"]}
 Content: {result["content"]}
 Source: {result["source"]}
+Search Method: {result.get("search_method", "Database Search")}
 Recommended Action: {result["action_label"]}
 Recommended Link: {result["action_url"]}
 Relevance Score: {result["score"]}
+{vector_score_text}
 """
         )
 
@@ -1046,7 +1307,7 @@ Strict Instructions:
 - Do not guess.
 - Do not invent courses, policies, schedules, departments, documents, services, or technical topics.
 - Do not answer from general knowledge.
-- If the Database Context does not contain the answer, reply exactly:
+- If the Database Context is empty or does not contain the answer, reply exactly:
   "I cannot find this information in the database."
 - If the context is relevant, answer clearly and professionally.
 - If a recommended action or link is useful, mention it naturally.

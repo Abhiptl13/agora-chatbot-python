@@ -16,21 +16,25 @@ from dotenv import load_dotenv
 from bson import ObjectId
 from bson.errors import InvalidId
 from gridfs.errors import NoFile
-from pymongo import MongoClient
-from pymongo.errors import ConfigurationError
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from pypdf import PdfReader
 
 from mongo_db import (
+    db,
     users_collection,
-    knowledge_collection,
     documents_collection,
     appointments_collection,
     conversations_collection
 )
 
 from services.chatbot_service import chatbot_response
+
+from services.vector_embedding_service import (
+    create_text_embedding,
+    build_embedding_text,
+    EMBEDDING_DIMENSIONS
+)
 
 
 # -----------------------------
@@ -51,26 +55,8 @@ app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 # -----------------------------
 
 def create_gridfs_storage():
-    mongo_uri = os.getenv("MONGO_URI")
-
-    if not mongo_uri:
-        return None
-
-    mongo_client = MongoClient(mongo_uri)
-
-    database_name = (
-        os.getenv("MONGO_DB_NAME")
-        or os.getenv("MONGO_DATABASE")
-        or "agora_chatbot_db"
-    )
-
-    try:
-        mongo_database = mongo_client.get_default_database()
-    except ConfigurationError:
-        mongo_database = mongo_client[database_name]
-
     return gridfs.GridFS(
-        mongo_database,
+        db,
         collection="document_files"
     )
 
@@ -182,6 +168,13 @@ def get_safe_filename_or_none(filename):
 def get_request_question():
     data = request.get_json(silent=True) or {}
     return (data.get("question") or data.get("message") or "").strip()
+
+
+def is_matched_source(source):
+    return source not in [
+        "Fallback",
+        "No matching database source"
+    ]
 
 
 def get_status_class(status):
@@ -482,6 +475,8 @@ def documents():
                     error = "Invalid PDF file name."
 
                 else:
+                    gridfs_file_id = None
+
                     try:
                         file_bytes = document_file.read()
 
@@ -531,14 +526,27 @@ def documents():
                                 "content_text_available": bool(pdf_text)
                             }
 
+                            embedding_text = build_embedding_text(document_data)
+
+                            document_data["embedding"] = create_text_embedding(embedding_text)
+                            document_data["embedding_model"] = "all-MiniLM-L6-v2"
+                            document_data["embedding_dimensions"] = EMBEDDING_DIMENSIONS
+                            document_data["embedding_created_at"] = create_timestamp()
+
                             documents_collection.insert_one(document_data)
 
                             if pdf_text:
-                                success = "PDF document uploaded successfully to MongoDB and text was extracted for chatbot search."
+                                success = "PDF document uploaded successfully to MongoDB, text was extracted, and embedding was created for vector search."
                             else:
-                                success = "PDF document uploaded successfully to MongoDB. Text could not be extracted, but preview and download are available."
+                                success = "PDF document uploaded successfully to MongoDB with vector embedding. Text could not be extracted, but preview and download are available."
 
                     except Exception:
+                        if gridfs_file_id:
+                            try:
+                                document_file_storage.delete(gridfs_file_id)
+                            except Exception:
+                                pass
+
                         error = "PDF document upload failed. Please try again."
 
     mongo_query = build_document_access_query(role)
@@ -837,7 +845,10 @@ def health():
         "project": "Agora Assistant Chatbot - Python Version",
         "database": "MongoDB Atlas",
         "file_storage": "MongoDB GridFS",
-        "ai_provider": "Groq API"
+        "ai_provider": "Groq API",
+        "vector_search_ready": True,
+        "embedding_model": "all-MiniLM-L6-v2",
+        "embedding_dimensions": EMBEDDING_DIMENSIONS
     })
 
 
@@ -887,7 +898,7 @@ def api_widget_message():
         "question": question,
         "answer": answer,
         "source": source,
-        "matched": source != "Fallback",
+        "matched": is_matched_source(source),
         "module": "embedded_widget"
     })
 
@@ -932,7 +943,7 @@ def api_chat_message():
         "question": question,
         "answer": answer,
         "source": source,
-        "matched": source != "Fallback"
+        "matched": is_matched_source(source)
     })
 
 
