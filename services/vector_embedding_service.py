@@ -1,33 +1,10 @@
-from sentence_transformers import SentenceTransformer
+import re
+from collections import Counter
 
 
-# -----------------------------
-# VECTOR SEARCH SETTINGS
-# -----------------------------
+SEARCH_LIMIT_DEFAULT = 5
+MIN_SCORE = 0.05
 
-VECTOR_INDEX_NAME = "vector_index"
-VECTOR_FIELD_NAME = "embedding"
-EMBEDDING_DIMENSIONS = 384
-
-_embedding_model = None
-
-
-# -----------------------------
-# MODEL LOADER
-# -----------------------------
-
-def get_embedding_model():
-    global _embedding_model
-
-    if _embedding_model is None:
-        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-
-    return _embedding_model
-
-
-# -----------------------------
-# TEXT HELPERS
-# -----------------------------
 
 def clean_text(value):
     if value is None:
@@ -68,87 +45,88 @@ def build_embedding_text(item):
     return "\n".join(parts).strip()
 
 
-# -----------------------------
-# EMBEDDING GENERATION
-# -----------------------------
-
-def create_text_embedding(text):
-    text = clean_text(text).strip()
-
-    if not text:
-        return [0.0] * EMBEDDING_DIMENSIONS
-
-    model = get_embedding_model()
-
-    embedding = model.encode(
-        text,
-        normalize_embeddings=True
-    )
-
-    return embedding.tolist()
+def tokenize(text):
+    text = clean_text(text).lower()
+    return re.findall(r"\b[a-zA-Z0-9]+\b", text)
 
 
-# -----------------------------
-# VECTOR SEARCH
-# -----------------------------
+def calculate_text_score(query_text, document_text):
+    query_tokens = tokenize(query_text)
+    document_tokens = tokenize(document_text)
 
-def build_vector_search_pipeline(query_text, role_filter=None, limit=5, num_candidates=100):
-    query_vector = create_text_embedding(query_text)
+    if not query_tokens or not document_tokens:
+        return 0.0
 
-    pipeline = [
-        {
-            "$vectorSearch": {
-                "index": VECTOR_INDEX_NAME,
-                "path": VECTOR_FIELD_NAME,
-                "queryVector": query_vector,
-                "numCandidates": num_candidates,
-                "limit": limit
-            }
-        }
-    ]
+    query_counter = Counter(query_tokens)
+    document_counter = Counter(document_tokens)
 
-    if role_filter:
-        pipeline.append({
-            "$match": role_filter
-        })
+    matched_score = 0
+    total_score = sum(query_counter.values())
 
-    pipeline.append({
-        "$project": {
-            "_id": 1,
-            "title": 1,
-            "category": 1,
-            "keywords": 1,
-            "summary": 1,
-            "answer": 1,
-            "description": 1,
-            "content": 1,
-            "text": 1,
-            "content_text": 1,
-            "audience": 1,
-            "type": 1,
-            "source": 1,
-            "file_url": 1,
-            "download_url": 1,
-            "original_file_name": 1,
-            "file_name": 1,
-            "vector_score": {
-                "$meta": "vectorSearchScore"
-            }
-        }
-    })
+    for token, count in query_counter.items():
+        if token in document_counter:
+            matched_score += count
 
-    return pipeline
+    if total_score > 0:
+        return matched_score / total_score
+
+    return 0.0
 
 
-def run_vector_search(collection, query_text, role_filter=None, limit=5):
+def document_matches_filter(document, role_filter):
+    if not role_filter:
+        return True
+
+    for key, expected_value in role_filter.items():
+        actual_value = document.get(key)
+
+        if isinstance(expected_value, dict):
+            if "$in" in expected_value:
+                allowed_values = expected_value["$in"]
+
+                if isinstance(actual_value, list):
+                    if not any(value in allowed_values for value in actual_value):
+                        return False
+                else:
+                    if actual_value not in allowed_values:
+                        return False
+            else:
+                continue
+        else:
+            if actual_value != expected_value:
+                return False
+
+    return True
+
+
+def run_vector_search(collection, query_text, role_filter=None, limit=SEARCH_LIMIT_DEFAULT):
     try:
-        pipeline = build_vector_search_pipeline(
-            query_text=query_text,
-            role_filter=role_filter,
-            limit=limit
+        documents = list(collection.find({}))
+        results = []
+
+        for document in documents:
+            if not document_matches_filter(document, role_filter):
+                continue
+
+            searchable_text = build_embedding_text(document)
+            score = calculate_text_score(query_text, searchable_text)
+
+            if score >= MIN_SCORE:
+                document["vector_score"] = score
+                results.append(document)
+
+        results = sorted(
+            results,
+            key=lambda item: item.get("vector_score", 0),
+            reverse=True
         )
 
-        return list(collection.aggregate(pipeline))
+        return results[:limit]
 
-    except Exception:
+    except Exception as error:
+        print("Lightweight search error:", error)
         return []
+
+
+def build_vector_search_pipeline(query_text, role_filter=None, limit=5, num_candidates=100):
+    return []
