@@ -94,6 +94,9 @@ This approach improves reliability and reduces unsupported AI-generated answers.
 
 Screenshots are included to demonstrate the final working system.
 
+Create this folder:
+
+
 ### Login Page
 
 ![Login Page](docs/screenshots/login.png)
