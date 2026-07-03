@@ -1,8 +1,10 @@
 /* ================================
    Agora Assistant Embedded Widget
-   Improved Widget Script with:
+   Updated Widget Script with:
+   - Backend action_label/action_url support
+   - Dynamic action buttons from chatbot API
+   - Safe fallback action detection
    - Visible close button
-   - Dynamic action buttons
    - Fixed service/section links
    - Accessibility label updates
    - Chatbot reopen after navigation
@@ -60,6 +62,7 @@
                 <div class="agora-quick-actions" id="agoraInitialQuickActions">
                     <button data-question="What services are available?">Services</button>
                     <button data-question="How can I book an appointment?">Appointments</button>
+                    <button data-question="Show my appointments">My Appointments</button>
                     <button data-question="What documents can I search?">Documents</button>
                     <button data-question="What departments are available?">Departments</button>
                 </div>
@@ -105,7 +108,9 @@
         return String(text || "")
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
     }
 
     function formatMessageText(text) {
@@ -158,19 +163,58 @@
         }
     }
 
+    function isSafeActionUrl(url) {
+        if (!url) {
+            return false;
+        }
+
+        const cleanedUrl = String(url).trim();
+
+        return (
+            cleanedUrl.startsWith("/") ||
+            cleanedUrl.startsWith("https://") ||
+            cleanedUrl.startsWith("http://")
+        );
+    }
+
+    function normalizeAction(label, url) {
+        if (!label || !url) {
+            return null;
+        }
+
+        const cleanLabel = String(label).trim();
+        const cleanUrl = String(url).trim();
+
+        if (!cleanLabel || !cleanUrl) {
+            return null;
+        }
+
+        if (!isSafeActionUrl(cleanUrl)) {
+            return null;
+        }
+
+        return {
+            label: cleanLabel,
+            url: cleanUrl
+        };
+    }
+
     function addUniqueAction(actions, seen, label, url) {
-        const key = `${label}-${url}`;
+        const action = normalizeAction(label, url);
+
+        if (!action) {
+            return;
+        }
+
+        const key = `${action.label}-${action.url}`;
 
         if (!seen.has(key)) {
             seen.add(key);
-            actions.push({
-                label: label,
-                url: url
-            });
+            actions.push(action);
         }
     }
 
-    function getActionLinks(source, answer, question) {
+    function getFallbackActionLinks(source, answer, question) {
         const primaryText = `${question || ""} ${source || ""}`.toLowerCase();
         const secondaryText = `${answer || ""}`.toLowerCase();
 
@@ -188,6 +232,7 @@
 
         const hasDocumentIntent =
             primaryText.includes("document") ||
+            primaryText.includes("pdf") ||
             primaryText.includes("form") ||
             primaryText.includes("guide") ||
             primaryText.includes("course") ||
@@ -215,8 +260,10 @@
             primaryText.includes("conversation") ||
             primaryText.includes("previous chat");
 
+        const hasDashboardIntent =
+            primaryText.includes("dashboard");
+
         const hasPortalIntent =
-            primaryText.includes("dashboard") ||
             primaryText.includes("portal") ||
             primaryText.includes("home") ||
             primaryText.includes("website");
@@ -226,7 +273,7 @@
         }
 
         if (hasDocumentIntent) {
-            addUniqueAction(actions, seen, "Open Full Documents Page", "/documents");
+            addUniqueAction(actions, seen, "Open Document Center", "/documents");
             addUniqueAction(actions, seen, "View Documents Section", "/demo-site#documents");
         }
 
@@ -240,6 +287,10 @@
 
         if (hasHistoryIntent) {
             addUniqueAction(actions, seen, "Open Conversation History", "/history");
+        }
+
+        if (hasDashboardIntent) {
+            addUniqueAction(actions, seen, "Open Dashboard", "/dashboard");
         }
 
         if (hasPortalIntent) {
@@ -260,10 +311,11 @@
                 addUniqueAction(actions, seen, "Open Appointment Page", "/appointments");
             } else if (
                 secondaryText.includes("document") ||
+                secondaryText.includes("pdf") ||
                 secondaryText.includes("form") ||
                 secondaryText.includes("guide")
             ) {
-                addUniqueAction(actions, seen, "Open Full Documents Page", "/documents");
+                addUniqueAction(actions, seen, "Open Document Center", "/documents");
             } else if (
                 secondaryText.includes("department")
             ) {
@@ -273,12 +325,55 @@
                 secondaryText.includes("support")
             ) {
                 addUniqueAction(actions, seen, "View Services Section", "/demo-site#services");
+            } else if (
+                secondaryText.includes("history") ||
+                secondaryText.includes("conversation")
+            ) {
+                addUniqueAction(actions, seen, "Open Conversation History", "/history");
             }
         }
 
+        return actions;
+    }
+
+    function buildActionsFromResponse(data, question) {
+        const actions = [];
+        const seen = new Set();
+
         /*
-          Fallback actions only appear for general or unclear questions.
-          This avoids showing the same choices after every chatbot answer.
+          Main update:
+          Use backend-provided action first.
+          This action comes from chatbot_service.py and MongoDB website content records.
+        */
+        addUniqueAction(
+            actions,
+            seen,
+            data.action_label || "",
+            data.action_url || ""
+        );
+
+        /*
+          Fallback:
+          If backend action is missing or if text strongly indicates another useful page,
+          add safe backup actions.
+        */
+        const fallbackActions = getFallbackActionLinks(
+            data.source || "",
+            data.answer || "",
+            question || ""
+        );
+
+        fallbackActions.forEach(action => {
+            addUniqueAction(
+                actions,
+                seen,
+                action.label,
+                action.url
+            );
+        });
+
+        /*
+          Last fallback for unclear/general questions.
         */
         if (actions.length === 0) {
             addUniqueAction(actions, seen, "Go to Portal Home", "/demo-site");
@@ -304,23 +399,30 @@
     }
 
     function handleActionClick(url) {
-        if (!url) {
+        if (!isSafeActionUrl(url)) {
             return;
         }
 
         /*
           Keep chatbot open after page navigation.
-          This fixes the issue where the chatbot collapses after clicking Appointment.
+          This fixes the issue where the chatbot collapses after clicking an action.
         */
         sessionStorage.setItem(WIDGET_REOPEN_KEY, "true");
 
-        if (url.startsWith("#")) {
-            scrollToSection(url);
+        const cleanedUrl = String(url).trim();
+
+        if (cleanedUrl.startsWith("#")) {
+            scrollToSection(cleanedUrl);
             openWidget(false);
             return;
         }
 
-        const targetUrl = new URL(url, window.location.origin);
+        if (cleanedUrl.startsWith("http://") || cleanedUrl.startsWith("https://")) {
+            window.open(cleanedUrl, "_blank", "noopener,noreferrer");
+            return;
+        }
+
+        const targetUrl = new URL(cleanedUrl, window.location.origin);
         const currentPath = window.location.pathname;
         const samePath = targetUrl.pathname === currentPath;
 
@@ -424,7 +526,7 @@
             } else {
                 const answer = data.answer || "I could not find a response.";
                 const source = data.source || "Agora Assistant";
-                const actions = getActionLinks(source, answer, question);
+                const actions = buildActionsFromResponse(data, question);
 
                 addMessage(
                     answer,

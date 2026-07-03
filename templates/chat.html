@@ -10,7 +10,7 @@
     <p>
         Ask questions about College Lasalle services, documents, appointments,
         uploaded PDFs, departments, or portal support. Answers can include source
-        names and document links when available.
+        names, dynamic action buttons, and document links when available.
     </p>
 </div>
 
@@ -20,10 +20,11 @@
 
         <div class="assistant-header">
             <div>
-                <span class="assistant-chip">Groq AI · MongoDB · PDF Search</span>
+                <span class="assistant-chip">Groq AI · MongoDB Atlas Vector Search · Dynamic Actions</span>
                 <h2>Chat with Agora Assistant</h2>
                 <p>
-                    Connected to portal documents, chatbot memory, services, and knowledge records.
+                    Connected to portal pages, website content, documents, services,
+                    departments, structured queries, and chatbot memory.
                 </p>
             </div>
 
@@ -37,11 +38,11 @@
             <button type="button" onclick="quickAsk('How can I book an appointment?')">
                 Appointments
             </button>
-            <button type="button" onclick="quickAsk('What can you help me with?')">
-                Help
+            <button type="button" onclick="quickAsk('Show my appointments')">
+                My Appointments
             </button>
-            <button type="button" onclick="quickAsk('Search uploaded PDFs for project plan information')">
-                PDF Search
+            <button type="button" onclick="quickAsk('What services are available in the portal?')">
+                Services
             </button>
         </div>
 
@@ -51,7 +52,8 @@
                 <strong>Agora Assistant</strong>
                 <p>
                     Hello! I can help you search documents, understand services,
-                    book appointments, and answer questions using College Lasalle portal data.
+                    book appointments, view appointment information, and navigate the portal
+                    using College Lasalle application data.
                 </p>
             </div>
 
@@ -63,7 +65,7 @@
             <input
                 id="question"
                 type="text"
-                placeholder="Ask about documents, appointments, services, or uploaded PDFs..."
+                placeholder="Ask about documents, appointments, services, departments, or uploaded PDFs..."
                 autocomplete="off"
             >
 
@@ -79,20 +81,28 @@
         <div class="side-card">
             <h3>Suggested Questions</h3>
 
-            <button type="button" class="sidebar-prompt" onclick="quickAsk('What is the Week 1 objective in the uploaded project plan?')">
-                Week 1 project objective
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('What documents can I search?')">
+                Search documents
             </button>
 
-            <button type="button" class="sidebar-prompt" onclick="quickAsk('What are the deliverables at the end of Week 6?')">
-                Week 6 deliverables
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('Show my appointments')">
+                Show my appointments
             </button>
 
             <button type="button" class="sidebar-prompt" onclick="quickAsk('How can I book an appointment?')">
                 Book appointment
             </button>
 
-            <button type="button" class="sidebar-prompt" onclick="quickAsk('What documents can I search?')">
-                Search documents
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('What services are available in the portal?')">
+                Portal services
+            </button>
+
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('What departments are available?')">
+                Departments
+            </button>
+
+            <button type="button" class="sidebar-prompt" onclick="quickAsk('What can you help me with?')">
+                Help
             </button>
         </div>
 
@@ -100,10 +110,26 @@
             <h3>Connected Sources</h3>
 
             <div class="source-item">
+                <span>🔎</span>
+                <div>
+                    <strong>Vector Search</strong>
+                    <p>Semantic retrieval using MongoDB Atlas Vector Search when embeddings are available.</p>
+                </div>
+            </div>
+
+            <div class="source-item">
                 <span>📄</span>
                 <div>
                     <strong>PDF Documents</strong>
-                    <p>Uploaded files with searchable text.</p>
+                    <p>Uploaded files with extracted searchable text.</p>
+                </div>
+            </div>
+
+            <div class="source-item">
+                <span>🌐</span>
+                <div>
+                    <strong>Website Content</strong>
+                    <p>Synced portal pages, routes, services, and departments.</p>
                 </div>
             </div>
 
@@ -111,7 +137,7 @@
                 <span>🧠</span>
                 <div>
                     <strong>Knowledge Base</strong>
-                    <p>Institutional chatbot records.</p>
+                    <p>Institutional chatbot records with MongoDB fallback retrieval.</p>
                 </div>
             </div>
 
@@ -119,7 +145,7 @@
                 <span>💬</span>
                 <div>
                     <strong>Chat Memory</strong>
-                    <p>Recent conversation context.</p>
+                    <p>Recent conversation context for follow-up questions.</p>
                 </div>
             </div>
         </div>
@@ -127,12 +153,13 @@
         <div class="side-card highlight-card">
             <h3>Need another page?</h3>
             <p>
-                Go directly to documents, appointments, or your history.
+                Go directly to documents, appointments, your dashboard, or your history.
             </p>
 
             <div class="side-links">
                 <a href="/documents">Documents</a>
                 <a href="/appointments">Appointments</a>
+                <a href="/dashboard">Dashboard</a>
                 <a href="/history">History</a>
             </div>
         </div>
@@ -146,7 +173,9 @@ function escapeHTML(text) {
     return String(text || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
 function formatMessageText(text) {
@@ -165,12 +194,41 @@ function formatMessageText(text) {
     return safeText;
 }
 
-function getActionLinks(source, answer, question) {
+function isSafeActionUrl(url) {
+    if (!url) {
+        return false;
+    }
+
+    const cleanedUrl = String(url).trim();
+
+    return (
+        cleanedUrl.startsWith("/") ||
+        cleanedUrl.startsWith("https://") ||
+        cleanedUrl.startsWith("http://")
+    );
+}
+
+function normalizeAction(label, url) {
+    if (!label || !url) {
+        return null;
+    }
+
+    if (!isSafeActionUrl(url)) {
+        return null;
+    }
+
+    return {
+        label: String(label).trim(),
+        url: String(url).trim()
+    };
+}
+
+function getFallbackActionLinks(source, answer, question) {
     const text = `${source || ""} ${answer || ""} ${question || ""}`.toLowerCase();
     const actions = [];
 
     if (text.includes("appointment") || text.includes("advisor") || text.includes("book")) {
-        actions.push({ label: "Open Appointments", url: "/appointments" });
+        actions.push({ label: "Open Appointment Page", url: "/appointments" });
     }
 
     if (
@@ -181,18 +239,59 @@ function getActionLinks(source, answer, question) {
         text.includes("guide") ||
         text.includes("project")
     ) {
-        actions.push({ label: "Open Documents", url: "/documents" });
+        actions.push({ label: "Open Document Center", url: "/documents" });
+    }
+
+    if (text.includes("service") || text.includes("support")) {
+        actions.push({ label: "Open Services", url: "/demo-site#services" });
+    }
+
+    if (text.includes("department") || text.includes("computer science") || text.includes("business")) {
+        actions.push({ label: "Open Departments", url: "/demo-site#departments" });
     }
 
     if (text.includes("history") || text.includes("conversation")) {
         actions.push({ label: "Open History", url: "/history" });
     }
 
-    if (text.includes("dashboard") || text.includes("portal")) {
+    if (text.includes("dashboard")) {
         actions.push({ label: "Open Dashboard", url: "/dashboard" });
     }
 
-    const unique = [];
+    if (text.includes("portal") || text.includes("home")) {
+        actions.push({ label: "Go to Portal Home", url: "/demo-site" });
+    }
+
+    return actions;
+}
+
+function buildActionsFromResponse(data, question) {
+    const actions = [];
+
+    const backendAction = normalizeAction(
+        data.action_label || "",
+        data.action_url || ""
+    );
+
+    if (backendAction) {
+        actions.push(backendAction);
+    }
+
+    const fallbackActions = getFallbackActionLinks(
+        data.source || "",
+        data.answer || "",
+        question || ""
+    );
+
+    fallbackActions.forEach(action => {
+        const normalized = normalizeAction(action.label, action.url);
+
+        if (normalized) {
+            actions.push(normalized);
+        }
+    });
+
+    const uniqueActions = [];
     const seen = new Set();
 
     actions.forEach(action => {
@@ -200,14 +299,23 @@ function getActionLinks(source, answer, question) {
 
         if (!seen.has(key)) {
             seen.add(key);
-            unique.push(action);
+            uniqueActions.push(action);
         }
     });
 
-    return unique.slice(0, 3);
+    return uniqueActions.slice(0, 3);
 }
 
 function handleAction(url) {
+    if (!isSafeActionUrl(url)) {
+        return;
+    }
+
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+    }
+
     window.location.href = url;
 }
 
@@ -306,11 +414,7 @@ function sendMessage() {
         if (data.error) {
             addMessage(data.error, "bot", "Error");
         } else {
-            const actions = getActionLinks(
-                data.source || "",
-                data.answer || "",
-                question
-            );
+            const actions = buildActionsFromResponse(data, question);
 
             addMessage(
                 data.answer || "I could not find a response.",

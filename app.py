@@ -29,7 +29,30 @@ from mongo_db import (
 )
 
 from services.chatbot_service import chatbot_response
-from services.vector_embedding_service import build_embedding_text
+
+try:
+    from services.embedding_service import (
+        create_document_embedding,
+        EMBEDDING_MODEL_NAME,
+        EMBEDDING_DIMENSIONS
+    )
+    EMBEDDING_SERVICE_AVAILABLE = True
+except Exception:
+    create_document_embedding = None
+    EMBEDDING_MODEL_NAME = "Not configured"
+    EMBEDDING_DIMENSIONS = 0
+    EMBEDDING_SERVICE_AVAILABLE = False
+
+try:
+    from services.website_content_sync_service import (
+        sync_website_content_to_mongodb,
+        get_sync_preview
+    )
+    WEBSITE_SYNC_AVAILABLE = True
+except Exception:
+    sync_website_content_to_mongodb = None
+    get_sync_preview = None
+    WEBSITE_SYNC_AVAILABLE = False
 
 
 # -----------------------------
@@ -278,8 +301,7 @@ def build_safe_document_search_query(query):
             {"summary": {"$regex": safe_query, "$options": "i"}},
             {"type": {"$regex": safe_query, "$options": "i"}},
             {"original_file_name": {"$regex": safe_query, "$options": "i"}},
-            {"content_text": {"$regex": safe_query, "$options": "i"}},
-            {"search_text": {"$regex": safe_query, "$options": "i"}}
+            {"content_text": {"$regex": safe_query, "$options": "i"}}
         ]
     }
 
@@ -315,6 +337,38 @@ def get_pdf_response_from_gridfs(document, as_attachment=False):
         as_attachment=as_attachment,
         download_name=download_name
     )
+
+
+def add_embedding_to_document(document_data):
+    """
+    Creates a local sentence-transformers embedding for a new uploaded document.
+    If embedding creation fails, the document is still saved and regex fallback search works.
+    """
+
+    if not EMBEDDING_SERVICE_AVAILABLE:
+        document_data["embedding_status"] = "embedding_service_unavailable"
+        return document_data
+
+    if create_document_embedding is None:
+        document_data["embedding_status"] = "embedding_service_unavailable"
+        return document_data
+
+    try:
+        embedding = create_document_embedding(document_data)
+    except Exception:
+        embedding = None
+
+    if embedding:
+        document_data["embedding"] = embedding
+        document_data["embedding_model"] = EMBEDDING_MODEL_NAME
+        document_data["embedding_dimensions"] = EMBEDDING_DIMENSIONS
+        document_data["embedding_created_at"] = create_timestamp()
+        document_data["embedding_source"] = "local_sentence_transformers"
+        document_data["embedding_status"] = "created"
+    else:
+        document_data["embedding_status"] = "not_created"
+
+    return document_data
 
 
 # -----------------------------
@@ -511,6 +565,8 @@ def documents():
                                 "original_file_name": original_filename,
                                 "file_url": f"/documents/preview/{saved_filename}",
                                 "download_url": f"/documents/download/{saved_filename}",
+                                "action_label": "Open Document Center",
+                                "action_url": "/documents",
                                 "uploaded_by": user["email"],
                                 "uploaded_by_role": user["role"],
                                 "uploaded_at": create_timestamp(),
@@ -522,18 +578,16 @@ def documents():
                                 "content_text_available": bool(pdf_text)
                             }
 
-                            search_text = build_embedding_text(document_data)
-
-                            document_data["search_text"] = search_text
-                            document_data["search_method"] = "Lightweight Text Search"
-                            document_data["search_index_created_at"] = create_timestamp()
+                            document_data = add_embedding_to_document(document_data)
 
                             documents_collection.insert_one(document_data)
 
-                            if pdf_text:
-                                success = "PDF document uploaded successfully to MongoDB. Text was extracted and lightweight search indexing was prepared."
+                            if pdf_text and document_data.get("embedding_status") == "created":
+                                success = "PDF uploaded successfully, text was extracted, and vector embedding was created."
+                            elif pdf_text:
+                                success = "PDF uploaded successfully and text was extracted for chatbot search. Vector embedding was not created, but fallback search is available."
                             else:
-                                success = "PDF document uploaded successfully to MongoDB. Text could not be extracted, but preview and download are available."
+                                success = "PDF uploaded successfully. Text could not be extracted, but preview and download are available."
 
                     except Exception:
                         if gridfs_file_id:
@@ -827,6 +881,43 @@ def reject_appointment(appointment_id):
     return redirect("/admin/appointments")
 
 
+@app.route("/admin/sync-website-content", methods=["GET", "POST"])
+def admin_sync_website_content():
+    if not admin_required():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if not WEBSITE_SYNC_AVAILABLE:
+        return jsonify({
+            "status": "failed",
+            "error": "Website content sync service is not available."
+        }), 500
+
+    if request.method == "GET":
+        try:
+            preview = get_sync_preview()
+        except Exception as error:
+            return jsonify({
+                "status": "failed",
+                "error": str(error)
+            }), 500
+
+        return jsonify({
+            "status": "preview",
+            "message": "Send a POST request to this route to sync website content.",
+            "preview": preview
+        })
+
+    try:
+        result = sync_website_content_to_mongodb()
+    except Exception as error:
+        return jsonify({
+            "status": "failed",
+            "error": str(error)
+        }), 500
+
+    return jsonify(result)
+
+
 @app.route("/logout")
 def logout():
     session.clear()
@@ -841,10 +932,12 @@ def health():
         "database": "MongoDB Atlas",
         "file_storage": "MongoDB GridFS",
         "ai_provider": "Groq API",
-        "vector_search_ready": False,
-        "search_method": "Lightweight Text Search",
-        "embedding_model": "Disabled for free deployment",
-        "embedding_dimensions": 0
+        "search_mode": "MongoDB Atlas Vector Search + Optimized MongoDB Retrieval Fallback",
+        "vector_search_supported": True,
+        "embedding_service_available": EMBEDDING_SERVICE_AVAILABLE,
+        "embedding_model": EMBEDDING_MODEL_NAME,
+        "embedding_dimensions": EMBEDDING_DIMENSIONS,
+        "website_content_sync_available": WEBSITE_SYNC_AVAILABLE
     })
 
 
@@ -875,7 +968,12 @@ def api_widget_message():
         }).sort("timestamp", -1).limit(3)
     )
 
-    answer, source = chatbot_response(question, role, recent_history)
+    answer, source, action_label, action_url = chatbot_response(
+        question=question,
+        role=role,
+        recent_history=recent_history,
+        user_email=user["email"]
+    )
 
     conversation_data = {
         "user": user["email"],
@@ -884,6 +982,8 @@ def api_widget_message():
         "question": question,
         "answer": answer,
         "source": source,
+        "action_label": action_label,
+        "action_url": action_url,
         "module": "embedded_widget",
         "timestamp": create_timestamp()
     }
@@ -895,6 +995,8 @@ def api_widget_message():
         "answer": answer,
         "source": source,
         "matched": is_matched_source(source),
+        "action_label": action_label,
+        "action_url": action_url,
         "module": "embedded_widget"
     })
 
@@ -920,7 +1022,12 @@ def api_chat_message():
         }).sort("timestamp", -1).limit(3)
     )
 
-    answer, source = chatbot_response(question, role, recent_history)
+    answer, source, action_label, action_url = chatbot_response(
+        question=question,
+        role=role,
+        recent_history=recent_history,
+        user_email=user["email"]
+    )
 
     conversation_data = {
         "user": user["email"],
@@ -929,6 +1036,8 @@ def api_chat_message():
         "question": question,
         "answer": answer,
         "source": source,
+        "action_label": action_label,
+        "action_url": action_url,
         "module": "chat_page",
         "timestamp": create_timestamp()
     }
@@ -939,7 +1048,9 @@ def api_chat_message():
         "question": question,
         "answer": answer,
         "source": source,
-        "matched": is_matched_source(source)
+        "matched": is_matched_source(source),
+        "action_label": action_label,
+        "action_url": action_url
     })
 
 
@@ -1063,6 +1174,28 @@ def api_appointments():
     ]
 
     return jsonify(appointments_data)
+
+
+@app.route("/api/admin/sync-website-content", methods=["POST"])
+def api_admin_sync_website_content():
+    if not admin_required():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if not WEBSITE_SYNC_AVAILABLE:
+        return jsonify({
+            "status": "failed",
+            "error": "Website content sync service is not available."
+        }), 500
+
+    try:
+        result = sync_website_content_to_mongodb()
+    except Exception as error:
+        return jsonify({
+            "status": "failed",
+            "error": str(error)
+        }), 500
+
+    return jsonify(result)
 
 
 @app.route("/api/admin/appointments/<appointment_id>/status", methods=["POST"])

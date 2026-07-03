@@ -7,8 +7,25 @@ from mongo_db import (
     documents_collection,
     website_content_collection,
     portal_services_collection,
-    portal_departments_collection
+    portal_departments_collection,
+    appointments_collection
 )
+
+
+# -----------------------------
+# OPTIONAL VECTOR SEARCH IMPORT
+# -----------------------------
+
+try:
+    from services.vector_search_service import (
+        run_vector_search,
+        build_vector_result
+    )
+    VECTOR_SEARCH_AVAILABLE = True
+except Exception:
+    run_vector_search = None
+    build_vector_result = None
+    VECTOR_SEARCH_AVAILABLE = False
 
 
 # -----------------------------
@@ -33,6 +50,7 @@ SHORT_ALLOWED_TOKENS = {
 MAX_SEARCH_TOKENS = 10
 MAX_RESULTS_PER_COLLECTION = 25
 MIN_RELEVANCE_SCORE = 4
+TOP_CONTEXT_RESULTS = 3
 
 
 # -----------------------------
@@ -124,6 +142,10 @@ def extract_first_available_content(item, fields):
             return truncate_text(value)
 
     return ""
+
+
+def build_chatbot_return(answer, source, action_label="", action_url=""):
+    return answer, source, action_label, action_url
 
 
 # -----------------------------
@@ -456,6 +478,12 @@ def get_action_metadata(result_type, title, source):
             "url": "/history"
         }
 
+    if "dashboard" in text:
+        return {
+            "label": "Open Dashboard",
+            "url": "/dashboard"
+        }
+
     return {
         "label": "Go to Portal Home",
         "url": "/demo-site"
@@ -468,24 +496,136 @@ def build_result(
     content,
     source,
     result_type,
-    search_method="Optimized MongoDB Retrieval"
+    search_method="Optimized MongoDB Retrieval",
+    action_label=None,
+    action_url=None,
+    vector_score=None
 ):
-    action = get_action_metadata(result_type, title, source)
+    fallback_action = get_action_metadata(result_type, title, source)
 
-    return {
+    result = {
         "score": score,
         "title": title,
         "content": content,
         "source": source,
         "type": result_type,
-        "action_label": action["label"],
-        "action_url": action["url"],
+        "action_label": action_label or fallback_action["label"],
+        "action_url": action_url or fallback_action["url"],
         "search_method": search_method
     }
 
+    if vector_score is not None:
+        result["vector_score"] = vector_score
+
+    return result
+
+
+def normalize_result_action(result):
+    if result.get("action_label") and result.get("action_url"):
+        return result
+
+    action = get_action_metadata(
+        result.get("type", ""),
+        result.get("title", ""),
+        result.get("source", "")
+    )
+
+    result["action_label"] = result.get("action_label") or action["label"]
+    result["action_url"] = result.get("action_url") or action["url"]
+
+    return result
+
 
 # -----------------------------
-# COLLECTION SEARCH FUNCTIONS
+# VECTOR SEARCH FUNCTIONS
+# -----------------------------
+
+def vector_search_collection(collection, question, role, result_type, default_source):
+    if not VECTOR_SEARCH_AVAILABLE:
+        return []
+
+    if run_vector_search is None or build_vector_result is None:
+        return []
+
+    try:
+        candidates = run_vector_search(
+            collection=collection,
+            query_text=question,
+            role=role
+        )
+    except Exception:
+        return []
+
+    results = []
+
+    for item in candidates:
+        result = build_vector_result(
+            item=item,
+            result_type=result_type,
+            default_source=default_source
+        )
+
+        if not result:
+            continue
+
+        result = normalize_result_action(result)
+        results.append(result)
+
+    return results
+
+
+def vector_search_knowledge_base(question, role):
+    return vector_search_collection(
+        collection=knowledge_collection,
+        question=question,
+        role=role,
+        result_type="Knowledge Base",
+        default_source="Knowledge Base"
+    )
+
+
+def vector_search_documents(question, role):
+    return vector_search_collection(
+        collection=documents_collection,
+        question=question,
+        role=role,
+        result_type="Document",
+        default_source="Document Center"
+    )
+
+
+def vector_search_website_content(question, role):
+    return vector_search_collection(
+        collection=website_content_collection,
+        question=question,
+        role=role,
+        result_type="Website Content",
+        default_source="Portal Website"
+    )
+
+
+def vector_search_portal_services(question, role):
+    return vector_search_collection(
+        collection=portal_services_collection,
+        question=question,
+        role=role,
+        result_type="Portal Service",
+        default_source="Portal Service"
+    )
+
+
+def vector_search_portal_departments(question, role):
+    return vector_search_collection(
+        collection=portal_departments_collection,
+        question=question,
+        role=role,
+        result_type="Portal Department",
+        default_source="Portal Department"
+    )
+
+
+# -----------------------------
+# REGEX COLLECTION SEARCH FUNCTIONS
 # -----------------------------
 
 def search_knowledge_base(question, role):
@@ -544,7 +684,9 @@ def search_knowledge_base(question, role):
                     title=item.get("title", "Knowledge Base"),
                     content=content,
                     source=item.get("title", "Knowledge Base"),
-                    result_type="Knowledge Base"
+                    result_type="Knowledge Base",
+                    action_label=item.get("action_label"),
+                    action_url=item.get("action_url")
                 )
             )
 
@@ -628,14 +770,16 @@ def search_documents(question, role):
                     title=item.get("title", "Document"),
                     content=truncate_text(content, 3000),
                     source=item.get("title", "Document Center"),
-                    result_type="Document"
+                    result_type="Document",
+                    action_label=item.get("action_label"),
+                    action_url=item.get("action_url")
                 )
             )
 
     return results
 
 
-def search_website_content(question):
+def search_website_content(question, role):
     results = []
 
     search_fields = [
@@ -645,7 +789,10 @@ def search_website_content(question):
         "content",
         "summary",
         "text",
-        "description"
+        "description",
+        "route",
+        "action_label",
+        "action_url"
     ]
 
     field_weights = {
@@ -655,7 +802,10 @@ def search_website_content(question):
         "content": 5,
         "summary": 5,
         "text": 5,
-        "description": 5
+        "description": 5,
+        "route": 4,
+        "action_label": 4,
+        "action_url": 3
     }
 
     tokens = tokenize(question)
@@ -663,10 +813,14 @@ def search_website_content(question):
     candidates = find_candidates(
         website_content_collection,
         tokens,
-        search_fields
+        search_fields,
+        role
     )
 
     for item in candidates:
+        if not role_can_access(role, item.get("audience", "all")):
+            continue
+
         score = calculate_relevance_score(
             question,
             item,
@@ -685,14 +839,16 @@ def search_website_content(question):
                     title=item.get("title", "Website Content"),
                     content=content,
                     source=item.get("source", "Portal Website"),
-                    result_type="Website Content"
+                    result_type="Website Content",
+                    action_label=item.get("action_label"),
+                    action_url=item.get("action_url")
                 )
             )
 
     return results
 
 
-def search_portal_services(question):
+def search_portal_services(question, role):
     results = []
 
     search_fields = [
@@ -701,7 +857,10 @@ def search_portal_services(question):
         "description",
         "content",
         "summary",
-        "text"
+        "text",
+        "route",
+        "action_label",
+        "action_url"
     ]
 
     field_weights = {
@@ -710,7 +869,10 @@ def search_portal_services(question):
         "description": 6,
         "content": 5,
         "summary": 5,
-        "text": 5
+        "text": 5,
+        "route": 4,
+        "action_label": 4,
+        "action_url": 3
     }
 
     tokens = tokenize(question)
@@ -718,10 +880,14 @@ def search_portal_services(question):
     candidates = find_candidates(
         portal_services_collection,
         tokens,
-        search_fields
+        search_fields,
+        role
     )
 
     for item in candidates:
+        if not role_can_access(role, item.get("audience", "all")):
+            continue
+
         score = calculate_relevance_score(
             question,
             item,
@@ -740,14 +906,16 @@ def search_portal_services(question):
                     title=item.get("title", "Portal Service"),
                     content=content,
                     source=item.get("source", "Portal Service"),
-                    result_type="Portal Service"
+                    result_type="Portal Service",
+                    action_label=item.get("action_label"),
+                    action_url=item.get("action_url")
                 )
             )
 
     return results
 
 
-def search_portal_departments(question):
+def search_portal_departments(question, role):
     results = []
 
     search_fields = [
@@ -756,7 +924,10 @@ def search_portal_departments(question):
         "description",
         "content",
         "summary",
-        "text"
+        "text",
+        "route",
+        "action_label",
+        "action_url"
     ]
 
     field_weights = {
@@ -765,7 +936,10 @@ def search_portal_departments(question):
         "description": 6,
         "content": 5,
         "summary": 5,
-        "text": 5
+        "text": 5,
+        "route": 4,
+        "action_label": 4,
+        "action_url": 3
     }
 
     tokens = tokenize(question)
@@ -773,10 +947,14 @@ def search_portal_departments(question):
     candidates = find_candidates(
         portal_departments_collection,
         tokens,
-        search_fields
+        search_fields,
+        role
     )
 
     for item in candidates:
+        if not role_can_access(role, item.get("audience", "all")):
+            continue
+
         score = calculate_relevance_score(
             question,
             item,
@@ -795,11 +973,185 @@ def search_portal_departments(question):
                     title=item.get("title", "Portal Department"),
                     content=content,
                     source=item.get("source", "Portal Department"),
-                    result_type="Portal Department"
+                    result_type="Portal Department",
+                    action_label=item.get("action_label"),
+                    action_url=item.get("action_url")
                 )
             )
 
     return results
+
+
+# -----------------------------
+# STRUCTURED QUERY INTENT HELPERS
+# -----------------------------
+
+def is_show_appointments_intent(question):
+    question_lower = normalize_text(question)
+
+    appointment_terms = [
+        "my appointment",
+        "my appointments",
+        "show appointment",
+        "show appointments",
+        "list appointment",
+        "list appointments",
+        "view appointment",
+        "view appointments",
+        "check appointment",
+        "check appointments",
+        "appointment status",
+        "appointments status"
+    ]
+
+    return any(term in question_lower for term in appointment_terms)
+
+
+def is_book_appointment_intent(question):
+    question_lower = normalize_text(question)
+
+    booking_terms = [
+        "book appointment",
+        "book an appointment",
+        "make appointment",
+        "make an appointment",
+        "schedule appointment",
+        "schedule an appointment",
+        "new appointment",
+        "create appointment"
+    ]
+
+    return any(term in question_lower for term in booking_terms)
+
+
+def is_show_documents_intent(question):
+    question_lower = normalize_text(question)
+
+    document_terms = [
+        "show documents",
+        "list documents",
+        "view documents",
+        "my documents",
+        "available documents",
+        "open document center",
+        "document center",
+        "uploaded documents",
+        "uploaded pdf"
+    ]
+
+    return any(term in question_lower for term in document_terms)
+
+
+def format_appointment_list(appointments):
+    if not appointments:
+        return "I cannot find any appointment requests for your account."
+
+    lines = [
+        "Here are your latest appointment requests:"
+    ]
+
+    for item in appointments:
+        appointment_type = clean_text(item.get("appointment_type", "Appointment"))
+        advisor = clean_text(item.get("advisor", "Advisor not specified"))
+        date = clean_text(item.get("date", "Date not specified"))
+        time = clean_text(item.get("time", "Time not specified"))
+        status = clean_text(item.get("status", "Pending"))
+
+        lines.append(
+            f"- {appointment_type} with {advisor} on {date} at {time}. Status: {status}."
+        )
+
+    return "\n".join(lines)
+
+
+def format_document_list(documents):
+    if not documents:
+        return "I cannot find any accessible documents for your role."
+
+    lines = [
+        "Here are some documents available to you:"
+    ]
+
+    for item in documents:
+        title = clean_text(item.get("title", "Document"))
+        category = clean_text(item.get("category", "General"))
+        summary = truncate_text(item.get("summary", ""), 180)
+
+        if summary:
+            lines.append(f"- {title} ({category}): {summary}")
+        else:
+            lines.append(f"- {title} ({category})")
+
+    return "\n".join(lines)
+
+
+def build_structured_query_answer(question, role, user_email=None):
+    """
+    Handles direct structured database questions without sending them to AI first.
+    This shows the difference between structured MongoDB queries and AI retrieval.
+    """
+
+    if is_show_appointments_intent(question):
+        if not user_email:
+            return build_chatbot_return(
+                "You can view your appointment requests from the Appointment Page.",
+                "Appointments",
+                "Open Appointment Page",
+                "/appointments"
+            )
+
+        try:
+            appointment_results = list(
+                appointments_collection.find({
+                    "user": user_email
+                }).sort("created_at", -1).limit(5)
+            )
+        except Exception:
+            appointment_results = []
+
+        answer = format_appointment_list(appointment_results)
+
+        return build_chatbot_return(
+            answer,
+            "Appointments",
+            "Open Appointment Page",
+            "/appointments"
+        )
+
+    if is_book_appointment_intent(question):
+        answer = (
+            "You can book an appointment from the Appointment Page. "
+            "Select the appointment type, advisor, date, and time, then submit the request. "
+            "Your request will be saved as Pending until reviewed."
+        )
+
+        return build_chatbot_return(
+            answer,
+            "Appointment Booking",
+            "Open Appointment Page",
+            "/appointments"
+        )
+
+    if is_show_documents_intent(question):
+        document_query = build_role_filter(role)
+
+        try:
+            document_results = list(
+                documents_collection.find(document_query).sort("uploaded_at", -1).limit(5)
+            )
+        except Exception:
+            document_results = []
+
+        answer = format_document_list(document_results)
+
+        return build_chatbot_return(
+            answer,
+            "Document Center",
+            "Open Document Center",
+            "/documents"
+        )
+
+    return None
 
 
 # -----------------------------
@@ -993,44 +1345,74 @@ Strict Instructions:
 # MAIN CHATBOT RESPONSE
 # -----------------------------
 
-def chatbot_response(question, role, recent_history=None):
+def chatbot_response(question, role, recent_history=None, user_email=None):
     recent_history = recent_history or []
 
     casual_answer = get_casual_response(question)
 
     if casual_answer:
-        return casual_answer, "General Conversation"
+        return build_chatbot_return(
+            casual_answer,
+            "General Conversation",
+            "",
+            ""
+        )
+
+    structured_answer = build_structured_query_answer(
+        question=question,
+        role=role,
+        user_email=user_email
+    )
+
+    if structured_answer:
+        return structured_answer
 
     question_tokens = tokenize(question)
 
     if not question_tokens:
-        return (
+        return build_chatbot_return(
             "I cannot find this information in the database.",
-            "No matching database source"
+            "No matching database source",
+            "",
+            ""
         )
 
     if is_memory_question(question):
         memory_answer = build_memory_only_answer(question, recent_history)
 
         if memory_answer:
-            return memory_answer, "Conversation Memory"
+            return build_chatbot_return(
+                memory_answer,
+                "Conversation Memory",
+                "Open Conversation History",
+                "/history"
+            )
 
     all_results = []
 
+    # 1. Semantic search first: MongoDB Atlas Vector Search
+    all_results.extend(vector_search_knowledge_base(question, role))
+    all_results.extend(vector_search_documents(question, role))
+    all_results.extend(vector_search_website_content(question, role))
+    
+
+    # 2. Reliable fallback: Optimized MongoDB regex retrieval
     all_results.extend(search_knowledge_base(question, role))
     all_results.extend(search_documents(question, role))
-    all_results.extend(search_website_content(question))
-    all_results.extend(search_portal_services(question))
-    all_results.extend(search_portal_departments(question))
+    all_results.extend(search_website_content(question, role))
+    all_results.extend(search_portal_services(question, role))
+    all_results.extend(search_portal_departments(question, role))
 
     all_results = deduplicate_results(all_results)
 
     memory_context = format_conversation_memory(recent_history)
 
     if not all_results:
-        return (
+        return build_chatbot_return(
             "I cannot find this information in the database.",
-            "No matching database source"
+            "No matching database source",
+            "",
+            ""
         )
 
     all_results.sort(
@@ -1038,18 +1420,27 @@ def chatbot_response(question, role, recent_history=None):
         key=lambda result: result["score"]
     )
 
-    top_results = all_results[:3]
-    best_result = top_results[0]
+    top_results = all_results[:TOP_CONTEXT_RESULTS]
+    best_result = normalize_result_action(top_results[0])
 
     if best_result["score"] < MIN_RELEVANCE_SCORE:
-        return (
+        return build_chatbot_return(
             "I cannot find this information in the database.",
-            "No matching database source"
+            "No matching database source",
+            "",
+            ""
         )
 
     context_parts = []
 
     for result in top_results:
+        result = normalize_result_action(result)
+
+        vector_score_text = ""
+
+        if result.get("vector_score") is not None:
+            vector_score_text = f"Vector Score: {result.get('vector_score')}"
+
         context_parts.append(
             f"""
 Source Type: {result["type"]}
@@ -1060,15 +1451,18 @@ Search Method: {result.get("search_method", "Optimized MongoDB Retrieval")}
 Recommended Action: {result["action_label"]}
 Recommended Link: {result["action_url"]}
 Relevance Score: {result["score"]}
+{vector_score_text}
 """
         )
 
     context = "\n---\n".join(context_parts).strip()
 
     if not context:
-        return (
+        return build_chatbot_return(
             "I cannot find this information in the database.",
-            "No matching database source"
+            "No matching database source",
+            "",
+            ""
         )
 
     prompt = f"""
@@ -1091,6 +1485,7 @@ Important Application Rules:
 - Do not say that an email confirmation will be sent.
 - Do not promise email notifications, SMS notifications, automatic approval, or features that are not implemented.
 - If the user asks about uploaded PDFs, documents, or files, tell the user to use the Document Center preview/download buttons only if the context supports it.
+- If the context includes a Recommended Action and Recommended Link, mention the action naturally when useful.
 
 Strict Instructions:
 - Use only the Database Context above.
@@ -1100,7 +1495,6 @@ Strict Instructions:
 - If the Database Context is empty or does not contain the answer, reply exactly:
   "I cannot find this information in the database."
 - If the context is relevant, answer clearly and professionally.
-- If a recommended action or link is useful, mention it naturally.
 - Keep the response concise.
 - Use bullet points only when helpful.
 - Do not exceed 6 bullet points.
@@ -1126,4 +1520,9 @@ Strict Instructions:
 
     answer = clean_unsupported_claims(answer.strip(), question)
 
-    return answer, best_result["source"]
+    return build_chatbot_return(
+        answer,
+        best_result["source"],
+        best_result.get("action_label", ""),
+        best_result.get("action_url", "")
+    )
