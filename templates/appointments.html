@@ -16,6 +16,19 @@
     </p>
 </div>
 
+{% if request.args.get("from_chatbot") %}
+<div class="chatbot-page-alert">
+    <div class="chatbot-page-alert-icon">AI</div>
+    <div>
+        <strong>Opened from chatbot recommendation.</strong>
+        <p>
+            Agora Assistant directed you here so you can complete your appointment request.
+            Fill in the form below and submit it as a pending request.
+        </p>
+    </div>
+</div>
+{% endif %}
+
 {% if success %}
 <div class="alert success-alert">
     {{ success }}
@@ -30,7 +43,7 @@
 
 <div class="appointment-layout">
 
-    <section class="appointment-card">
+    <section class="appointment-card chatbot-highlight-target" id="appointment-request-form">
 
         <div class="card-heading">
             <span class="section-chip">New Request</span>
@@ -155,8 +168,8 @@
             </p>
 
             <div class="side-actions">
-                <a href="/chat">Ask AI</a>
-                <a href="/documents">Documents</a>
+                <a href="/chat?from_chatbot=appointments">Ask AI</a>
+                <a href="/documents?from_chatbot=1">Documents</a>
             </div>
         </div>
 
@@ -164,7 +177,7 @@
 
 </div>
 
-<section class="appointment-history-card">
+<section class="appointment-history-card" id="appointment-history">
 
     <div class="history-header">
         <div>

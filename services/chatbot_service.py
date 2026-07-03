@@ -144,8 +144,61 @@ def extract_first_available_content(item, fields):
     return ""
 
 
+# -----------------------------
+# CHATBOT ACTION URL HELPERS
+# -----------------------------
+
+def make_chatbot_reactive_url(url):
+    """
+    Adds a chatbot source marker to internal action URLs.
+    This allows pages to show a banner or highlight when opened from chatbot.
+
+    Examples:
+    /appointments -> /appointments?from_chatbot=1
+    /documents -> /documents?from_chatbot=1
+    /demo-site#services -> /demo-site?from_chatbot=services#services
+    """
+
+    url = clean_text(url).strip()
+
+    if not url:
+        return ""
+
+    if "from_chatbot=" in url:
+        return url
+
+    if not url.startswith("/"):
+        return url
+
+    if url.startswith("/appointments"):
+        return "/appointments?from_chatbot=1"
+
+    if url.startswith("/documents"):
+        return "/documents?from_chatbot=1"
+
+    if url.startswith("/history"):
+        return "/history?from_chatbot=1"
+
+    if url.startswith("/chat"):
+        return "/chat?from_chatbot=1"
+
+    if url.startswith("/dashboard"):
+        return "/dashboard?from_chatbot=1"
+
+    if url.startswith("/demo-site#services"):
+        return "/demo-site?from_chatbot=services#services"
+
+    if url.startswith("/demo-site#departments"):
+        return "/demo-site?from_chatbot=departments#departments"
+
+    if url.startswith("/demo-site"):
+        return "/demo-site?from_chatbot=1"
+
+    return url
+
+
 def build_chatbot_return(answer, source, action_label="", action_url=""):
-    return answer, source, action_label, action_url
+    return answer, source, action_label, make_chatbot_reactive_url(action_url)
 
 
 # -----------------------------
@@ -445,48 +498,48 @@ def get_action_metadata(result_type, title, source):
     if "appointment" in text or "advisor" in text or "book" in text:
         return {
             "label": "Open Appointment Page",
-            "url": "/appointments"
+            "url": "/appointments?from_chatbot=1"
         }
 
     if "document" in text or "course" in text or "form" in text or "guide" in text or "pdf" in text:
         return {
             "label": "Open Document Center",
-            "url": "/documents"
+            "url": "/documents?from_chatbot=1"
         }
 
     if "department" in text or "computer science" in text or "business" in text:
         return {
             "label": "Open Departments",
-            "url": "/demo-site#departments"
+            "url": "/demo-site?from_chatbot=departments#departments"
         }
 
     if "service" in text or "support" in text:
         return {
             "label": "Open Services",
-            "url": "/demo-site#services"
+            "url": "/demo-site?from_chatbot=services#services"
         }
 
     if "chatbot" in text or "assistant" in text:
         return {
             "label": "Open AI Assistant",
-            "url": "/chat"
+            "url": "/chat?from_chatbot=1"
         }
 
     if "history" in text or "conversation" in text:
         return {
             "label": "Open History",
-            "url": "/history"
+            "url": "/history?from_chatbot=1"
         }
 
     if "dashboard" in text:
         return {
             "label": "Open Dashboard",
-            "url": "/dashboard"
+            "url": "/dashboard?from_chatbot=1"
         }
 
     return {
         "label": "Go to Portal Home",
-        "url": "/demo-site"
+        "url": "/demo-site?from_chatbot=1"
     }
 
 
@@ -503,14 +556,17 @@ def build_result(
 ):
     fallback_action = get_action_metadata(result_type, title, source)
 
+    final_action_label = action_label or fallback_action["label"]
+    final_action_url = action_url or fallback_action["url"]
+
     result = {
         "score": score,
         "title": title,
         "content": content,
         "source": source,
         "type": result_type,
-        "action_label": action_label or fallback_action["label"],
-        "action_url": action_url or fallback_action["url"],
+        "action_label": final_action_label,
+        "action_url": make_chatbot_reactive_url(final_action_url),
         "search_method": search_method
     }
 
@@ -522,6 +578,7 @@ def build_result(
 
 def normalize_result_action(result):
     if result.get("action_label") and result.get("action_url"):
+        result["action_url"] = make_chatbot_reactive_url(result.get("action_url"))
         return result
 
     action = get_action_metadata(
@@ -531,7 +588,9 @@ def normalize_result_action(result):
     )
 
     result["action_label"] = result.get("action_label") or action["label"]
-    result["action_url"] = result.get("action_url") or action["url"]
+    result["action_url"] = make_chatbot_reactive_url(
+        result.get("action_url") or action["url"]
+    )
 
     return result
 
@@ -1097,7 +1156,7 @@ def build_structured_query_answer(question, role, user_email=None):
                 "You can view your appointment requests from the Appointment Page.",
                 "Appointments",
                 "Open Appointment Page",
-                "/appointments"
+                "/appointments?from_chatbot=1"
             )
 
         try:
@@ -1115,7 +1174,7 @@ def build_structured_query_answer(question, role, user_email=None):
             answer,
             "Appointments",
             "Open Appointment Page",
-            "/appointments"
+            "/appointments?from_chatbot=1"
         )
 
     if is_book_appointment_intent(question):
@@ -1129,7 +1188,7 @@ def build_structured_query_answer(question, role, user_email=None):
             answer,
             "Appointment Booking",
             "Open Appointment Page",
-            "/appointments"
+            "/appointments?from_chatbot=1"
         )
 
     if is_show_documents_intent(question):
@@ -1148,7 +1207,7 @@ def build_structured_query_answer(question, role, user_email=None):
             answer,
             "Document Center",
             "Open Document Center",
-            "/documents"
+            "/documents?from_chatbot=1"
         )
 
     return None
@@ -1285,7 +1344,7 @@ def build_fallback_answer(best_result):
     content = best_result.get("content", "")
     source = best_result.get("source", "internal knowledge base")
     action_label = best_result.get("action_label", "")
-    action_url = best_result.get("action_url", "")
+    action_url = make_chatbot_reactive_url(best_result.get("action_url", ""))
 
     if content:
         answer = (
@@ -1385,18 +1444,20 @@ def chatbot_response(question, role, recent_history=None, user_email=None):
                 memory_answer,
                 "Conversation Memory",
                 "Open Conversation History",
-                "/history"
+                "/history?from_chatbot=1"
             )
 
     all_results = []
 
     # 1. Semantic search first: MongoDB Atlas Vector Search
+    # Vector indexes are created only for the main retrieval collections:
+    # documents, knowledge_base, and website_content.
     all_results.extend(vector_search_knowledge_base(question, role))
     all_results.extend(vector_search_documents(question, role))
     all_results.extend(vector_search_website_content(question, role))
-    
 
     # 2. Reliable fallback: Optimized MongoDB regex retrieval
+    # Fallback still searches all collections, including services and departments.
     all_results.extend(search_knowledge_base(question, role))
     all_results.extend(search_documents(question, role))
     all_results.extend(search_website_content(question, role))

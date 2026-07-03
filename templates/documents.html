@@ -15,6 +15,19 @@
     </p>
 </div>
 
+{% if request.args.get("from_chatbot") %}
+<div class="chatbot-page-alert">
+    <div class="chatbot-page-alert-icon">AI</div>
+    <div>
+        <strong>Opened from chatbot recommendation.</strong>
+        <p>
+            Agora Assistant directed you here so you can search, preview, or download
+            available documents from the Document Center.
+        </p>
+    </div>
+</div>
+{% endif %}
+
 {% if success %}
 <div class="alert success-alert">
     {{ success }}
@@ -29,7 +42,7 @@
 
 {% if role in ["admin", "administrator", "teacher"] %}
 
-<section class="upload-card">
+<section class="upload-card" id="document-upload-section">
 
     <div class="upload-header">
         <div>
@@ -130,9 +143,18 @@
 
 {% endif %}
 
-<section class="document-toolbar">
+<section class="document-toolbar chatbot-highlight-target" id="document-search-section">
 
     <form method="GET" action="/documents" class="document-search">
+
+        {% if request.args.get("from_chatbot") %}
+        <input
+            type="hidden"
+            name="from_chatbot"
+            value="{{ request.args.get('from_chatbot') }}"
+        >
+        {% endif %}
+
         <input
             type="text"
             name="q"
@@ -146,14 +168,20 @@
     </form>
 
     {% if query %}
-    <a href="/documents" class="clear-search">
-        Clear
-    </a>
+        {% if request.args.get("from_chatbot") %}
+        <a href="/documents?from_chatbot={{ request.args.get('from_chatbot') }}" class="clear-search">
+            Clear
+        </a>
+        {% else %}
+        <a href="/documents" class="clear-search">
+            Clear
+        </a>
+        {% endif %}
     {% endif %}
 
 </section>
 
-<section class="documents-card">
+<section class="documents-card" id="document-library">
 
     <div class="documents-header">
         <div>
