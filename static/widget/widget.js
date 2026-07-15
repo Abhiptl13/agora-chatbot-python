@@ -3,7 +3,9 @@
    Updated Widget Script with:
    - Backend action_label/action_url support
    - Dynamic action buttons from chatbot API
+   - Duplicate action button prevention
    - Safe fallback action detection
+   - Chatbot reactive URLs with from_chatbot
    - Visible close button
    - Fixed service/section links
    - Accessibility label updates
@@ -177,13 +179,95 @@
         );
     }
 
+    function normalizeActionUrl(url) {
+        if (!url) {
+            return "";
+        }
+
+        const originalUrl = String(url).trim();
+
+        if (!originalUrl) {
+            return "";
+        }
+
+        if (originalUrl.startsWith("http://") || originalUrl.startsWith("https://")) {
+            return originalUrl;
+        }
+
+        if (originalUrl.startsWith("#")) {
+            return originalUrl;
+        }
+
+        if (!originalUrl.startsWith("/")) {
+            return originalUrl;
+        }
+
+        if (originalUrl.startsWith("/appointments")) {
+            return "/appointments?from_chatbot=1";
+        }
+
+        if (originalUrl.startsWith("/documents")) {
+            return "/documents?from_chatbot=1";
+        }
+
+        if (originalUrl.startsWith("/history")) {
+            return "/ return originalUrl;
+        }
+
+        if (originalUrl.startsWith("#")) {
+            return originalUrl;
+        }
+
+        if (!originalUrl.startsWith("/")) {
+            return originalUrl;
+        }
+
+        if (originalUrl.startsWith("/appointments")) {
+            return "/appointments?from_chatbot=1";
+        }
+
+        if (originalUrl.startsWith("/documents")) {
+            return "/documents?from_chatbot=1";
+        }
+
+        if (originalUrl.startsWith("/history")) {
+            return "/history?from_chatbot=1";
+        }
+
+        if (originalUrl.startsWith("/chat")) {
+            return "/chat?from_chatbot=1";
+        }
+
+        if (originalUrl.startsWith("/dashboard")) {
+            return "/dashboard?from_chatbot=1";
+        }
+
+        if (originalUrl.startsWith("/demo-site#services")) {
+            return "/demo-site?from_chatbot=services#services";
+        }
+
+        if (originalUrl.startsWith("/demo-site#departments")) {
+            return "/demo-site?from_chatbot=departments#departments";
+        }
+
+        if (originalUrl.startsWith("/demo-site#documents")) {
+            return "/demo-site?from_chatbot=documents#documents";
+        }
+
+        if (originalUrl.startsWith("/demo-site")) {
+            return "/demo-site?from_chatbot=1";
+        }
+
+        return originalUrl;
+    }
+
     function normalizeAction(label, url) {
         if (!label || !url) {
             return null;
         }
 
         const cleanLabel = String(label).trim();
-        const cleanUrl = String(url).trim();
+        const cleanUrl = normalizeActionUrl(url);
 
         if (!cleanLabel || !cleanUrl) {
             return null;
@@ -199,17 +283,41 @@
         };
     }
 
-    function addUniqueAction(actions, seen, label, url) {
-        const action = normalizeAction(label, url);
+    function getActionDedupKey(action) {
+        if (!action) {
+            return "";
+        }
+
+        const label = String(action.label || "").toLowerCase().trim();
+        const url = normalizeActionUrl(action.url || "").toLowerCase().trim();
+
+        if (url) {
+            return url;
+        }
+
+        return label;
+    }
+
+    function addUniqueAction(actions, actionOrLabel, optionalUrl = null) {
+        let action = null;
+
+        if (typeof actionOrLabel === "object" && actionOrLabel !== null) {
+            action = normalizeAction(actionOrLabel.label, actionOrLabel.url);
+        } else {
+            action = normalizeAction(actionOrLabel, optionalUrl);
+        }
 
         if (!action) {
             return;
         }
 
-        const key = `${action.label}-${action.url}`;
+        const newKey = getActionDedupKey(action);
 
-        if (!seen.has(key)) {
-            seen.add(key);
+        const alreadyExists = actions.some(function (existingAction) {
+            return getActionDedupKey(existingAction) === newKey;
+        });
+
+        if (!alreadyExists) {
             actions.push(action);
         }
     }
@@ -219,7 +327,6 @@
         const secondaryText = `${answer || ""}`.toLowerCase();
 
         const actions = [];
-        const seen = new Set();
 
         const hasAppointmentIntent =
             primaryText.includes("appointment") ||
@@ -269,32 +376,57 @@
             primaryText.includes("website");
 
         if (hasAppointmentIntent) {
-            addUniqueAction(actions, seen, "Open Appointment Page", "/appointments");
+            addUniqueAction(actions, {
+                label: "Open Appointment Page",
+                url: "/appointments?from_chatbot=1"
+            });
         }
 
         if (hasDocumentIntent) {
-            addUniqueAction(actions, seen, "Open Document Center", "/documents");
-            addUniqueAction(actions, seen, "View Documents Section", "/demo-site#documents");
+            addUniqueAction(actions, {
+                label: "Open Document Center",
+                url: "/documents?from_chatbot=1"
+            });
+
+            addUniqueAction(actions, {
+                label: "View Documents Section",
+                url: "/demo-site?from_chatbot=documents#documents"
+            });
         }
 
         if (hasDepartmentIntent) {
-            addUniqueAction(actions, seen, "View Departments Section", "/demo-site#departments");
+            addUniqueAction(actions, {
+                label: "View Departments Section",
+                url: "/demo-site?from_chatbot=departments#departments"
+            });
         }
 
         if (hasServiceIntent) {
-            addUniqueAction(actions, seen, "View Services Section", "/demo-site#services");
+            addUniqueAction(actions, {
+                label: "View Services Section",
+                url: "/demo-site?from_chatbot=services#services"
+            });
         }
 
         if (hasHistoryIntent) {
-            addUniqueAction(actions, seen, "Open Conversation History", "/history");
+            addUniqueAction(actions, {
+                label: "Open Conversation History",
+                url: "/history?from_chatbot=1"
+            });
         }
 
         if (hasDashboardIntent) {
-            addUniqueAction(actions, seen, "Open Dashboard", "/dashboard");
+            addUniqueAction(actions, {
+                label: "Open Dashboard",
+                url: "/dashboard?from_chatbot=1"
+            });
         }
 
         if (hasPortalIntent) {
-            addUniqueAction(actions, seen, "Go to Portal Home", "/demo-site");
+            addUniqueAction(actions, {
+                label: "Go to Portal Home",
+                url: "/demo-site?from_chatbot=1"
+            });
         }
 
         /*
@@ -308,28 +440,43 @@
                 secondaryText.includes("advisor") ||
                 secondaryText.includes("book")
             ) {
-                addUniqueAction(actions, seen, "Open Appointment Page", "/appointments");
+                addUniqueAction(actions, {
+                    label: "Open Appointment Page",
+                    url: "/appointments?from_chatbot=1"
+                });
             } else if (
                 secondaryText.includes("document") ||
                 secondaryText.includes("pdf") ||
                 secondaryText.includes("form") ||
                 secondaryText.includes("guide")
             ) {
-                addUniqueAction(actions, seen, "Open Document Center", "/documents");
+                addUniqueAction(actions, {
+                    label: "Open Document Center",
+                    url: "/documents?from_chatbot=1"
+                });
             } else if (
                 secondaryText.includes("department")
             ) {
-                addUniqueAction(actions, seen, "View Departments Section", "/demo-site#departments");
+                addUniqueAction(actions, {
+                    label: "View Departments Section",
+                    url: "/demo-site?from_chatbot=departments#departments"
+                });
             } else if (
                 secondaryText.includes("service") ||
                 secondaryText.includes("support")
             ) {
-                addUniqueAction(actions, seen, "View Services Section", "/demo-site#services");
+                addUniqueAction(actions, {
+                    label: "View Services Section",
+                    url: "/demo-site?from_chatbot=services#services"
+                });
             } else if (
                 secondaryText.includes("history") ||
                 secondaryText.includes("conversation")
             ) {
-                addUniqueAction(actions, seen, "Open Conversation History", "/history");
+                addUniqueAction(actions, {
+                    label: "Open Conversation History",
+                    url: "/history?from_chatbot=1"
+                });
             }
         }
 
@@ -338,24 +485,18 @@
 
     function buildActionsFromResponse(data, question) {
         const actions = [];
-        const seen = new Set();
 
         /*
-          Main update:
-          Use backend-provided action first.
-          This action comes from chatbot_service.py and MongoDB website content records.
+          Backend action comes first.
+          This prevents frontend fallback from overriding the backend action.
         */
-        addUniqueAction(
-            actions,
-            seen,
-            data.action_label || "",
-            data.action_url || ""
-        );
+        addUniqueAction(actions, {
+            label: data.action_label || "",
+            url: data.action_url || ""
+        });
 
         /*
-          Fallback:
-          If backend action is missing or if text strongly indicates another useful page,
-          add safe backup actions.
+          Fallback actions are added only if they are not duplicates.
         */
         const fallbackActions = getFallbackActionLinks(
             data.source || "",
@@ -363,21 +504,23 @@
             question || ""
         );
 
-        fallbackActions.forEach(action => {
-            addUniqueAction(
-                actions,
-                seen,
-                action.label,
-                action.url
-            );
+        fallbackActions.forEach(function (action) {
+            addUniqueAction(actions, action);
         });
 
         /*
           Last fallback for unclear/general questions.
         */
         if (actions.length === 0) {
-            addUniqueAction(actions, seen, "Go to Portal Home", "/demo-site");
-            addUniqueAction(actions, seen, "Search Documents", "/documents");
+            addUniqueAction(actions, {
+                label: "Go to Portal Home",
+                url: "/demo-site?from_chatbot=1"
+            });
+
+            addUniqueAction(actions, {
+                label: "Search Documents",
+                url: "/documents?from_chatbot=1"
+            });
         }
 
         return actions.slice(0, 3);
@@ -409,7 +552,7 @@
         */
         sessionStorage.setItem(WIDGET_REOPEN_KEY, "true");
 
-        const cleanedUrl = String(url).trim();
+        const cleanedUrl = normalizeActionUrl(url);
 
         if (cleanedUrl.startsWith("#")) {
             scrollToSection(cleanedUrl);
@@ -432,7 +575,7 @@
             return;
         }
 
-        window.location.href = targetUrl.pathname + targetUrl.hash;
+        window.location.href = targetUrl.pathname + targetUrl.search + targetUrl.hash;
     }
 
     function addMessage(text, sender, source = null, actions = []) {
@@ -452,7 +595,7 @@
         if (actions.length > 0) {
             content += `<div class="agora-action-list">`;
 
-            actions.forEach(action => {
+            actions.forEach(function (action) {
                 content += `
                     <button
                         type="button"
@@ -474,7 +617,7 @@
 
         const actionButtons = message.querySelectorAll(".agora-action-link");
 
-        actionButtons.forEach(button => {
+        actionButtons.forEach(function (button) {
             button.addEventListener("click", function () {
                 handleActionClick(this.dataset.url);
             });
@@ -576,7 +719,7 @@
         }
     });
 
-    document.querySelectorAll(".agora-quick-actions button").forEach(button => {
+    document.querySelectorAll(".agora-quick-actions button").forEach(function (button) {
         button.addEventListener("click", function () {
             sendMessage(this.dataset.question);
         });

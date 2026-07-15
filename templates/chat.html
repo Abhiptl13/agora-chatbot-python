@@ -20,7 +20,7 @@
 
         <div class="assistant-header">
             <div>
-                <span class="assistant-chip">Groq AI · MongoDB Atlas Vector Search · Dynamic Actions</span>
+                <span class="assistant-chip">Groq AI · MongoDB Retrieval · Dynamic Actions</span>
                 <h2>Chat with Agora Assistant</h2>
                 <p>
                     Connected to portal pages, website content, documents, services,
@@ -112,8 +112,8 @@
             <div class="source-item">
                 <span>🔎</span>
                 <div>
-                    <strong>Vector Search</strong>
-                    <p>Semantic retrieval using MongoDB Atlas Vector Search when embeddings are available.</p>
+                    <strong>MongoDB Retrieval</strong>
+                    <p>Optimized MongoDB fallback retrieval for the deployed Render version.</p>
                 </div>
             </div>
 
@@ -208,6 +208,52 @@ function isSafeActionUrl(url) {
     );
 }
 
+function normalizeActionUrl(url) {
+    if (!url) {
+        return "";
+    }
+
+    let cleanedUrl = String(url).trim();
+
+    if (!cleanedUrl.startsWith("/")) {
+        return cleanedUrl;
+    }
+
+    if (cleanedUrl.startsWith("/appointments")) {
+        return "/appointments?from_chatbot=1";
+    }
+
+    if (cleanedUrl.startsWith("/documents")) {
+        return "/documents?from_chatbot=1";
+    }
+
+    if (cleanedUrl.startsWith("/history")) {
+        return "/history?from_chatbot=1";
+    }
+
+    if (cleanedUrl.startsWith("/chat")) {
+        return "/chat?from_chatbot=1";
+    }
+
+    if (cleanedUrl.startsWith("/dashboard")) {
+        return "/dashboard?from_chatbot=1";
+    }
+
+    if (cleanedUrl.startsWith("/demo-site#services")) {
+        return "/demo-site?from_chatbot=services#services";
+    }
+
+    if (cleanedUrl.startsWith("/demo-site#departments")) {
+        return "/demo-site?from_chatbot=departments#departments";
+    }
+
+    if (cleanedUrl.startsWith("/demo-site")) {
+        return "/demo-site?from_chatbot=1";
+    }
+
+    return cleanedUrl;
+}
+
 function normalizeAction(label, url) {
     if (!label || !url) {
         return null;
@@ -219,8 +265,41 @@ function normalizeAction(label, url) {
 
     return {
         label: String(label).trim(),
-        url: String(url).trim()
+        url: normalizeActionUrl(url)
     };
+}
+
+function getActionDedupKey(action) {
+    const label = String(action.label || "").toLowerCase().trim();
+    const url = normalizeActionUrl(action.url || "").toLowerCase().trim();
+
+    if (url) {
+        return url;
+    }
+
+    return label;
+}
+
+function addUniqueAction(actions, action) {
+    if (!action) {
+        return;
+    }
+
+    const normalized = normalizeAction(action.label, action.url);
+
+    if (!normalized) {
+        return;
+    }
+
+    const newKey = getActionDedupKey(normalized);
+
+    const alreadyExists = actions.some(function(existingAction) {
+        return getActionDedupKey(existingAction) === newKey;
+    });
+
+    if (!alreadyExists) {
+        actions.push(normalized);
+    }
 }
 
 function getFallbackActionLinks(source, answer, question) {
@@ -228,7 +307,7 @@ function getFallbackActionLinks(source, answer, question) {
     const actions = [];
 
     if (text.includes("appointment") || text.includes("advisor") || text.includes("book")) {
-        actions.push({ label: "Open Appointment Page", url: "/appointments" });
+        actions.push({ label: "Open Appointment Page", url: "/appointments?from_chatbot=1" });
     }
 
     if (
@@ -239,27 +318,27 @@ function getFallbackActionLinks(source, answer, question) {
         text.includes("guide") ||
         text.includes("project")
     ) {
-        actions.push({ label: "Open Document Center", url: "/documents" });
+        actions.push({ label: "Open Document Center", url: "/documents?from_chatbot=1" });
     }
 
     if (text.includes("service") || text.includes("support")) {
-        actions.push({ label: "Open Services", url: "/demo-site#services" });
+        actions.push({ label: "Open Services", url: "/demo-site?from_chatbot=services#services" });
     }
 
     if (text.includes("department") || text.includes("computer science") || text.includes("business")) {
-        actions.push({ label: "Open Departments", url: "/demo-site#departments" });
+        actions.push({ label: "Open Departments", url: "/demo-site?from_chatbot=departments#departments" });
     }
 
     if (text.includes("history") || text.includes("conversation")) {
-        actions.push({ label: "Open History", url: "/history" });
+        actions.push({ label: "Open History", url: "/history?from_chatbot=1" });
     }
 
     if (text.includes("dashboard")) {
-        actions.push({ label: "Open Dashboard", url: "/dashboard" });
+        actions.push({ label: "Open Dashboard", url: "/dashboard?from_chatbot=1" });
     }
 
     if (text.includes("portal") || text.includes("home")) {
-        actions.push({ label: "Go to Portal Home", url: "/demo-site" });
+        actions.push({ label: "Go to Portal Home", url: "/demo-site?from_chatbot=1" });
     }
 
     return actions;
@@ -273,9 +352,7 @@ function buildActionsFromResponse(data, question) {
         data.action_url || ""
     );
 
-    if (backendAction) {
-        actions.push(backendAction);
-    }
+    addUniqueAction(actions, backendAction);
 
     const fallbackActions = getFallbackActionLinks(
         data.source || "",
@@ -283,27 +360,11 @@ function buildActionsFromResponse(data, question) {
         question || ""
     );
 
-    fallbackActions.forEach(action => {
-        const normalized = normalizeAction(action.label, action.url);
-
-        if (normalized) {
-            actions.push(normalized);
-        }
+    fallbackActions.forEach(function(action) {
+        addUniqueAction(actions, action);
     });
 
-    const uniqueActions = [];
-    const seen = new Set();
-
-    actions.forEach(action => {
-        const key = `${action.label}-${action.url}`;
-
-        if (!seen.has(key)) {
-            seen.add(key);
-            uniqueActions.push(action);
-        }
-    });
-
-    return uniqueActions.slice(0, 3);
+    return actions.slice(0, 3);
 }
 
 function handleAction(url) {
@@ -316,7 +377,7 @@ function handleAction(url) {
         return;
     }
 
-    window.location.href = url;
+    window.location.href = normalizeActionUrl(url);
 }
 
 function addMessage(text, sender, source = null, actions = []) {
