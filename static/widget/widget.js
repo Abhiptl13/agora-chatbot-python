@@ -1,15 +1,5 @@
 /* ================================
    Agora Assistant Embedded Widget
-   Updated Widget Script with:
-   - Backend action_label/action_url support
-   - Dynamic action buttons from chatbot API
-   - Duplicate action button prevention
-   - Safe fallback action detection
-   - Chatbot reactive URLs with from_chatbot
-   - Visible close button
-   - Fixed service/section links
-   - Accessibility label updates
-   - Chatbot reopen after navigation
 ================================ */
 
 (function () {
@@ -192,26 +182,6 @@
 
         if (originalUrl.startsWith("http://") || originalUrl.startsWith("https://")) {
             return originalUrl;
-        }
-
-        if (originalUrl.startsWith("#")) {
-            return originalUrl;
-        }
-
-        if (!originalUrl.startsWith("/")) {
-            return originalUrl;
-        }
-
-        if (originalUrl.startsWith("/appointments")) {
-            return "/appointments?from_chatbot=1";
-        }
-
-        if (originalUrl.startsWith("/documents")) {
-            return "/documents?from_chatbot=1";
-        }
-
-        if (originalUrl.startsWith("/history")) {
-            return "/ return originalUrl;
         }
 
         if (originalUrl.startsWith("#")) {
@@ -429,11 +399,6 @@
             });
         }
 
-        /*
-          Secondary check:
-          Only use answer text if no direct intent was detected from question/source.
-          This prevents the chatbot from showing the same options every time.
-        */
         if (actions.length === 0) {
             if (
                 secondaryText.includes("appointment") ||
@@ -486,18 +451,11 @@
     function buildActionsFromResponse(data, question) {
         const actions = [];
 
-        /*
-          Backend action comes first.
-          This prevents frontend fallback from overriding the backend action.
-        */
         addUniqueAction(actions, {
             label: data.action_label || "",
             url: data.action_url || ""
         });
 
-        /*
-          Fallback actions are added only if they are not duplicates.
-        */
         const fallbackActions = getFallbackActionLinks(
             data.source || "",
             data.answer || "",
@@ -508,9 +466,6 @@
             addUniqueAction(actions, action);
         });
 
-        /*
-          Last fallback for unclear/general questions.
-        */
         if (actions.length === 0) {
             addUniqueAction(actions, {
                 label: "Go to Portal Home",
@@ -546,10 +501,6 @@
             return;
         }
 
-        /*
-          Keep chatbot open after page navigation.
-          This fixes the issue where the chatbot collapses after clicking an action.
-        */
         sessionStorage.setItem(WIDGET_REOPEN_KEY, "true");
 
         const cleanedUrl = normalizeActionUrl(url);
